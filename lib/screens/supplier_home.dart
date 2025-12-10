@@ -1,5 +1,5 @@
+// lib/screens/supplier_home.dart
 import 'package:flutter/material.dart';
-import 'dart:async';
 import 'dart:io';
 import 'package:image_picker/image_picker.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
@@ -8,6 +8,9 @@ import '../screens/role_select_screen.dart';
 import '/app_colors.dart';
 import '../repository.dart';
 import '../models.dart';
+import 'tabs/supplier/create_product_tab.dart';
+import 'tabs/supplier/create_delivery_tab.dart';
+import 'tabs/supplier/profile_tab.dart';
 
 class SupplierHome extends StatefulWidget {
   final String username;
@@ -120,101 +123,6 @@ class _SupplierHomeState extends State<SupplierHome>
     }
   }
 
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: AppColors.background,
-      appBar: AppBar(
-        title: const Text('Поставщик'),
-        backgroundColor: AppColors.primary,
-        foregroundColor: AppColors.surface,
-        elevation: 0,
-        bottom: TabBar(
-          controller: _tabController,
-          indicatorColor: AppColors.surface,
-          labelColor: AppColors.surface,
-          unselectedLabelColor: AppColors.surface.withOpacity(0.7),
-          tabAlignment: TabAlignment.fill,
-          tabs: const [
-            Tab(icon: Icon(Icons.add_box_outlined), text: 'Создать'),
-            Tab(icon: Icon(Icons.assignment_outlined), text: 'Поставка'),
-            Tab(icon: Icon(Icons.person_outline), text: 'Профиль'),
-          ],
-        ),
-      ),
-      body: TabBarView(
-        controller: _tabController,
-        children: [
-          _buildCreateProductTab(),
-          _buildCreateDeliveryTab(),
-          _buildProfileTab(),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildCreateProductTab() {
-    return SingleChildScrollView(
-      padding: const EdgeInsets.all(24.0),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          TextFormField(
-            controller: _nameController,
-            decoration: _buildInputDecoration(
-              labelText: 'Название товара',
-              icon: Icons.label_outline,
-            ),
-          ),
-          const SizedBox(height: 16),
-          TextFormField(
-            controller: _countryController,
-            decoration: _buildInputDecoration(
-              labelText: 'Страна',
-              icon: Icons.public_outlined,
-            ),
-          ),
-          const SizedBox(height: 16),
-          TextFormField(
-            controller: _aboutController,
-            decoration: _buildInputDecoration(
-              labelText: 'Описание',
-              icon: Icons.description_outlined,
-            ),
-            maxLines: 3,
-          ),
-          const SizedBox(height: 16),
-          TextFormField(
-            controller: _priceController,
-            decoration: _buildInputDecoration(
-              labelText: 'Цена',
-              icon: Icons.attach_money_outlined,
-            ),
-            keyboardType: TextInputType.number,
-          ),
-          const SizedBox(height: 24),
-          ElevatedButton.icon(
-            onPressed: pickImage,
-            icon: const Icon(Icons.image_outlined),
-            label: const Text('Выбрать изображение'),
-          ),
-          if (_selectedImage != null)
-            Padding(
-              padding: const EdgeInsets.symmetric(vertical: 16.0),
-              child: Image.file(_selectedImage!, height: 200),
-            ),
-          const SizedBox(height: 24),
-          _isProductSubmitting
-              ? const Center(child: CircularProgressIndicator())
-              : ElevatedButton(
-                  onPressed: submitProduct,
-                  child: const Text('Добавить товар'),
-                ),
-        ],
-      ),
-    );
-  }
-
   Future<void> pickImage() async {
     final picked = await picker.pickImage(source: ImageSource.gallery);
     if (picked != null) {
@@ -236,8 +144,8 @@ class _SupplierHomeState extends State<SupplierHome>
     setState(() => _isProductSubmitting = true);
     try {
       final fileName = '${DateTime.now().millisecondsSinceEpoch}.jpg';
-      await Supabase.instance.client.storage.from('product_images').upload(fileName, _selectedImage!);
-      final imageUrl = Supabase.instance.client.storage.from('product_images').getPublicUrl(fileName);
+      await Supabase.instance.client.storage.from('image_s').upload(fileName, _selectedImage!);
+      final imageUrl = Supabase.instance.client.storage.from('image_s').getPublicUrl(fileName);
 
       await _repo.upsertProduct(Product(
         id: 0,
@@ -263,66 +171,6 @@ class _SupplierHomeState extends State<SupplierHome>
     }
   }
 
-  Widget _buildCreateDeliveryTab() {
-    if (_isLoadingDeliveryData) {
-      return const Center(child: CircularProgressIndicator());
-    }
-    return SingleChildScrollView(
-      padding: const EdgeInsets.all(24.0),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          DropdownButtonFormField<String>(
-            value: _selectedStore,
-            items: _stores.map((store) => DropdownMenuItem(value: store, child: Text(store))).toList(),
-            onChanged: (value) => setState(() => _selectedStore = value),
-            decoration: const InputDecoration(labelText: 'Выберите магазин'),
-          ),
-          const SizedBox(height: 24),
-          const Text('Выберите товары:'),
-          ListView.builder(
-            shrinkWrap: true,
-            physics: const NeverScrollableScrollPhysics(),
-            itemCount: _products.length,
-            itemBuilder: (context, index) {
-              final product = _products[index];
-              final qty = _selectedProducts[product.id] ?? 0;
-              return ListTile(
-                title: Text(product.name),
-                subtitle: Text('${product.price} ₽'),
-                trailing: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    IconButton(
-                      onPressed: () {
-                        if (qty > 0) {
-                          setState(() => _selectedProducts[product.id] = qty - 1);
-                        }
-                      },
-                      icon: const Icon(Icons.remove),
-                    ),
-                    Text('$qty'),
-                    IconButton(
-                      onPressed: () => setState(() => _selectedProducts[product.id] = qty + 1),
-                      icon: const Icon(Icons.add),
-                    ),
-                  ],
-                ),
-              );
-            },
-          ),
-          const SizedBox(height: 24),
-          _isDeliverySubmitting
-              ? const Center(child: CircularProgressIndicator())
-              : ElevatedButton(
-                  onPressed: _selectedStore == null || _selectedProducts.isEmpty ? null : submitDelivery,
-                  child: const Text('Создать поставку'),
-                ),
-        ],
-      ),
-    );
-  }
-
   Future<void> submitDelivery() async {
     setState(() => _isDeliverySubmitting = true);
     try {
@@ -343,149 +191,6 @@ class _SupplierHomeState extends State<SupplierHome>
     }
   }
 
-  Widget _buildProfileTab() {
-    if (isLoadingProfile) {
-      return const Center(child: CircularProgressIndicator());
-    }
-    return SingleChildScrollView(
-      padding: const EdgeInsets.all(24.0),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          _FadeInSlideUp(
-            delay: const Duration(milliseconds: 100),
-            child: CircleAvatar(
-              radius: 50,
-              backgroundColor: AppColors.primary,
-              child: Icon(
-                Icons.person,
-                size: 60,
-                color: AppColors.surface,
-              ),
-            ),
-          ),
-          const SizedBox(height: 24),
-          _FadeInSlideUp(
-            delay: const Duration(milliseconds: 200),
-            child: Card(
-              elevation: 2,
-              color: AppColors.surface,
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12.0)),
-              child: Column(
-                children: [
-                  ListTile(
-                    leading: const Icon(
-                      Icons.email_outlined,
-                      color: AppColors.primary,
-                    ),
-                    title: Text(mail ?? 'Email не найден'),
-                    subtitle: const Text('Email (нельзя изменить'),
-                  ),
-                  const Divider(),
-                  ListTile(
-                    leading: const Icon(
-                      Icons.security_outlined,
-                      color: AppColors.primary,
-                    ),
-                    title: Text(passwordMasked ?? 'Пароль не задан'),
-                    subtitle: const Text('Текущий пароль'),
-                  ),
-                ],
-              ),
-            ),
-          ),
-          const SizedBox(height: 24),
-          _FadeInSlideUp(
-            delay: const Duration(milliseconds: 300),
-            child: TextFormField(
-              controller: _usernameController,
-              decoration: _buildInputDecoration(
-                labelText: 'Имя пользователя',
-                icon: Icons.person_outline,
-              ),
-            ),
-          ),
-          const SizedBox(height: 16),
-          _FadeInSlideUp(
-            delay: const Duration(milliseconds: 400),
-            child: TextFormField(
-              controller: _passwordController,
-              obscureText: true,
-              decoration: _buildInputDecoration(
-                labelText: 'Новый пароль (необязательно)',
-                icon: Icons.vpn_key_outlined,
-              ),
-            ),
-          ),
-          const SizedBox(height: 24),
-          _FadeInSlideUp(
-            delay: const Duration(milliseconds: 500),
-            child: ElevatedButton.icon(
-              onPressed: _updateProfile,
-              icon: const Icon(Icons.save_outlined),
-              label: const Text('Сохранить изменения'),
-              style: ElevatedButton.styleFrom(
-                backgroundColor: AppColors.primary,
-                foregroundColor: AppColors.surface,
-                padding: const EdgeInsets.symmetric(vertical: 16.0),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12.0),
-                ),
-              ),
-            ),
-          ),
-          const SizedBox(height: 12),
-          _FadeInSlideUp(
-            delay: const Duration(milliseconds: 600),
-            child: OutlinedButton.icon(
-              onPressed: () => _logout(context),
-              icon: const Icon(Icons.logout_rounded),
-              label: const Text('Выйти из аккаунта'),
-              style: OutlinedButton.styleFrom(
-                foregroundColor: AppColors.error,
-                side: const BorderSide(color: AppColors.error, width: 2),
-                padding: const EdgeInsets.symmetric(vertical: 16.0),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12.0),
-                ),
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  InputDecoration _buildInputDecoration({
-    required String labelText,
-    required IconData icon,
-  }) {
-    return InputDecoration(
-      labelText: labelText,
-      prefixIcon: Icon(icon, color: AppColors.primaryLight),
-      labelStyle: const TextStyle(color: AppColors.textSecondary),
-      filled: true,
-      fillColor: AppColors.surface,
-      contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-      enabledBorder: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(12.0),
-        borderSide: BorderSide(color: AppColors.textSecondary.withOpacity(0.2)),
-      ),
-      focusedBorder: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(12.0),
-        borderSide: const BorderSide(color: AppColors.primary, width: 2.0),
-      ),
-      errorBorder: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(12.0),
-        borderSide: const BorderSide(color: AppColors.error, width: 1.0),
-      ),
-      focusedErrorBorder: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(12.0),
-        borderSide: const BorderSide(color: AppColors.error, width: 2.0),
-      ),
-    );
-  }
-
   void _showStyledSnackBar(String message, {bool isError = false}) {
     if (!mounted) return;
     ScaffoldMessenger.of(context).showSnackBar(
@@ -503,6 +208,69 @@ class _SupplierHomeState extends State<SupplierHome>
   }
 
   @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      backgroundColor: AppColors.background,
+      appBar: AppBar(
+        title: const Text('Поставщик'),
+        backgroundColor: AppColors.primary,
+        foregroundColor: AppColors.surface,
+        elevation: 0,
+        bottom: TabBar(
+          controller: _tabController,
+          indicatorColor: AppColors.surface,
+          labelColor: AppColors.surface,
+          unselectedLabelColor: AppColors.surface.withOpacity(0.7),
+          tabAlignment: TabAlignment.fill,
+          tabs: const [
+            Tab(icon: Icon(Icons.add_box_outlined), text: 'Создать'),
+            Tab(icon: Icon(Icons.assignment_outlined), text: 'Поставка'),
+            Tab(icon: Icon(Icons.person_outline), text: 'Профиль'),
+          ],
+        ),
+      ),
+      body: TabBarView(
+        controller: _tabController,
+        children: [
+          CreateProductTab(
+            nameController: _nameController,
+            countryController: _countryController,
+            aboutController: _aboutController,
+            priceController: _priceController,
+            selectedImage: _selectedImage,
+            isProductSubmitting: _isProductSubmitting,
+            onPickImage: pickImage,
+            onSubmit: submitProduct,
+          ),
+          CreateDeliveryTab(
+            isLoadingDeliveryData: _isLoadingDeliveryData,
+            products: _products,
+            stores: _stores,
+            selectedStore: _selectedStore,
+            selectedProducts: _selectedProducts,
+            onStoreChanged: (v) => setState(() => _selectedStore = v),
+            onQuantityChanged: (id, qty) {
+              if (qty < 0) qty = 0;
+              setState(() => _selectedProducts[id] = qty);
+            },
+            isDeliverySubmitting: _isDeliverySubmitting,
+            onSubmitDelivery: submitDelivery,
+          ),
+          ProfileTab(
+            isLoadingProfile: isLoadingProfile,
+            mail: mail,
+            passwordMasked: passwordMasked,
+            usernameController: _usernameController,
+            passwordController: _passwordController,
+            onUpdateProfile: _updateProfile,
+            onLogout: () => _logout(context),
+          ),
+        ],
+      ),
+    );
+  }
+
+  @override
   void dispose() {
     _tabController.dispose();
     _usernameController.dispose();
@@ -512,61 +280,5 @@ class _SupplierHomeState extends State<SupplierHome>
     _aboutController.dispose();
     _priceController.dispose();
     super.dispose();
-  }
-}
-
-class _FadeInSlideUp extends StatefulWidget {
-  final Widget child;
-  final Duration delay;
-  final Duration duration;
-
-  const _FadeInSlideUp({
-    required this.child,
-    this.delay = Duration.zero,
-    this.duration = const Duration(milliseconds: 500),
-  });
-
-  @override
-  State<_FadeInSlideUp> createState() => _FadeInSlideUpState();
-}
-
-class _FadeInSlideUpState extends State<_FadeInSlideUp>
-    with SingleTickerProviderStateMixin {
-  late AnimationController _controller;
-  late Animation<Offset> _slideAnimation;
-  late Animation<double> _fadeAnimation;
-
-  @override
-  void initState() {
-    super.initState();
-    _controller = AnimationController(vsync: this, duration: widget.duration);
-
-    _slideAnimation = Tween<Offset>(
-      begin: const Offset(0, 0.3),
-      end: Offset.zero,
-    ).animate(CurvedAnimation(parent: _controller, curve: Curves.easeOutCubic));
-
-    _fadeAnimation = Tween<double>(
-      begin: 0.0,
-      end: 1.0,
-    ).animate(CurvedAnimation(parent: _controller, curve: Curves.easeOut));
-
-    Future.delayed(widget.delay, () {
-      if (mounted) _controller.forward();
-    });
-  }
-
-  @override
-  void dispose() {
-    _controller.dispose();
-    super.dispose();
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return FadeTransition(
-      opacity: _fadeAnimation,
-      child: SlideTransition(position: _slideAnimation, child: widget.child),
-    );
   }
 }
