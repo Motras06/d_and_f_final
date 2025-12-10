@@ -566,6 +566,7 @@ class _FadeInSlideUp extends StatefulWidget {
   const _FadeInSlideUp({
     required this.child,
     this.delay = Duration.zero,
+    // ignore: unused_element_parameter
     this.duration = const Duration(milliseconds: 500),
   });
 

@@ -1,3 +1,4 @@
+// lib/screens/storage_home.dart
 import 'dart:typed_data' show ByteData, Uint8List;
 import 'dart:ui' as ui;
 import 'package:flutter/material.dart';
@@ -12,6 +13,9 @@ import 'package:qr_flutter/qr_flutter.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:share_plus/share_plus.dart';
 import '../repository.dart';
+import 'tabs/storage/supplies_tab.dart';
+import 'tabs/storage/products_tab.dart';
+import 'tabs/storage/storage_profile_tab.dart';
 
 class StorageHome extends StatefulWidget {
   final String username;
@@ -126,7 +130,6 @@ class _StorageHomeState extends State<StorageHome>
 
   Future<void> _showStoreSelectionDialog({bool initial = false}) async {
     String? picked = initial ? null : assignedStore;
-
     await showDialog(
       context: context,
       barrierDismissible: !initial,
@@ -263,109 +266,6 @@ class _StorageHomeState extends State<StorageHome>
     }
   }
 
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: AppColors.background,
-      appBar: AppBar(
-        title: const Text('Склад'),
-        backgroundColor: AppColors.primary,
-        foregroundColor: AppColors.surface,
-        elevation: 0,
-        bottom: TabBar(
-          controller: _tabController,
-          indicatorColor: AppColors.surface,
-          labelColor: AppColors.surface,
-          unselectedLabelColor: AppColors.surface.withOpacity(0.7),
-          tabAlignment: TabAlignment.fill,
-          tabs: const [
-            Tab(icon: Icon(Icons.local_shipping_outlined), text: 'Поставки'),
-            Tab(icon: Icon(Icons.inventory_2_outlined), text: 'Товары'),
-            Tab(icon: Icon(Icons.person_outline), text: 'Профиль'),
-          ],
-        ),
-      ),
-      body: TabBarView(
-        controller: _tabController,
-        children: [
-          _buildSuppliesTab(),
-          _buildProductsTab(),
-          _buildProfileTab(),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildSuppliesTab() {
-    if (assignedStore == null) {
-      return const Center(child: Text('Магазин не выбран'));
-    }
-    if (_isLoadingSupplies) {
-      return const Center(child: CircularProgressIndicator());
-    }
-    return ListView.builder(
-      itemCount: _deliveries.length,
-      itemBuilder: (context, index) {
-        final delivery = _deliveries[index];
-        return Card(
-          child: ExpansionTile(
-            title: Text('Поставка #${delivery['id']} - ${delivery['status']}'),
-            subtitle: Text('От: ${delivery['supplier_id']}'),
-            children: [
-              ...delivery['items'].map((item) => ListTile(
-                    title: Text('Товар ID: ${item['product_id']}'),
-                    subtitle: Text('Количество: ${item['quantity']}'),
-                  )),
-              if (delivery['status'] == 'pending')
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                  children: [
-                    ElevatedButton(
-                      onPressed: () => _acceptDelivery(delivery['id'], assignedStore!, delivery['items']),
-                      child: const Text('Принять'),
-                    ),
-                    ElevatedButton(
-                      onPressed: () => _rejectDelivery(delivery['id'], assignedStore!),
-                      child: const Text('Отклонить'),
-                    ),
-                  ],
-                ),
-            ],
-          ),
-        );
-      },
-    );
-  }
-
-  Widget _buildProductsTab() {
-    if (assignedStore == null) {
-      return const Center(child: Text('Магазин не выбран'));
-    }
-    if (_isLoadingProducts) {
-      return const Center(child: CircularProgressIndicator());
-    }
-    return ListView.builder(
-      itemCount: _storeProducts.length,
-      itemBuilder: (context, index) {
-        final product = _storeProducts[index];
-        final GlobalKey qrKey = GlobalKey();
-        return Card(
-          child: ListTile(
-            leading: product['image_url'] != null
-                ? Image.network(product['image_url'], width: 50, height: 50, fit: BoxFit.cover)
-                : const Icon(Icons.image_not_supported),
-            title: Text(product['name'] ?? 'Без названия'),
-            subtitle: Text('Количество: ${product['quantity']}'),
-            trailing: ElevatedButton(
-              onPressed: () => _showQrDialog(product, qrKey),
-              child: const Text('QR'),
-            ),
-          ),
-        );
-      },
-    );
-  }
-
   void _showQrDialog(Map<String, dynamic> product, GlobalKey qrKey) {
     showDialog(
       context: context,
@@ -425,149 +325,6 @@ class _StorageHomeState extends State<StorageHome>
     );
   }
 
-  Widget _buildProfileTab() {
-    if (isLoadingProfile) {
-      return const Center(child: CircularProgressIndicator());
-    }
-    return SingleChildScrollView(
-      padding: const EdgeInsets.all(24.0),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          _FadeInSlideUp(
-            delay: const Duration(milliseconds: 100),
-            child: CircleAvatar(
-              radius: 50,
-              backgroundColor: AppColors.primary,
-              child: Icon(
-                Icons.person,
-                size: 60,
-                color: AppColors.surface,
-              ),
-            ),
-          ),
-          const SizedBox(height: 24),
-          _FadeInSlideUp(
-            delay: const Duration(milliseconds: 200),
-            child: Card(
-              elevation: 2,
-              color: AppColors.surface,
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12.0)),
-              child: Column(
-                children: [
-                  ListTile(
-                    leading: const Icon(
-                      Icons.email_outlined,
-                      color: AppColors.primary,
-                    ),
-                    title: Text(mail ?? 'Email не найден'),
-                    subtitle: const Text('Email (нельзя изменить'),
-                  ),
-                  const Divider(),
-                  ListTile(
-                    leading: const Icon(
-                      Icons.security_outlined,
-                      color: AppColors.primary,
-                    ),
-                    title: Text(passwordMasked ?? 'Пароль не задан'),
-                    subtitle: const Text('Текущий пароль'),
-                  ),
-                ],
-              ),
-            ),
-          ),
-          const SizedBox(height: 24),
-          _FadeInSlideUp(
-            delay: const Duration(milliseconds: 300),
-            child: TextFormField(
-              controller: _usernameController,
-              decoration: _buildInputDecoration(
-                labelText: 'Имя пользователя',
-                icon: Icons.person_outline,
-              ),
-            ),
-          ),
-          const SizedBox(height: 16),
-          _FadeInSlideUp(
-            delay: const Duration(milliseconds: 400),
-            child: TextFormField(
-              controller: _passwordController,
-              obscureText: true,
-              decoration: _buildInputDecoration(
-                labelText: 'Новый пароль (необязательно)',
-                icon: Icons.vpn_key_outlined,
-              ),
-            ),
-          ),
-          const SizedBox(height: 24),
-          _FadeInSlideUp(
-            delay: const Duration(milliseconds: 500),
-            child: ElevatedButton.icon(
-              onPressed: _updateProfile,
-              icon: const Icon(Icons.save_outlined),
-              label: const Text('Сохранить изменения'),
-              style: ElevatedButton.styleFrom(
-                backgroundColor: AppColors.primary,
-                foregroundColor: AppColors.surface,
-                padding: const EdgeInsets.symmetric(vertical: 16.0),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12.0),
-                ),
-              ),
-            ),
-          ),
-          const SizedBox(height: 12),
-          _FadeInSlideUp(
-            delay: const Duration(milliseconds: 600),
-            child: OutlinedButton.icon(
-              onPressed: () => _logout(context),
-              icon: const Icon(Icons.logout_rounded),
-              label: const Text('Выйти из аккаунта'),
-              style: OutlinedButton.styleFrom(
-                foregroundColor: AppColors.error,
-                side: const BorderSide(color: AppColors.error, width: 2),
-                padding: const EdgeInsets.symmetric(vertical: 16.0),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12.0),
-                ),
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  InputDecoration _buildInputDecoration({
-    required String labelText,
-    required IconData icon,
-  }) {
-    return InputDecoration(
-      labelText: labelText,
-      prefixIcon: Icon(icon, color: AppColors.primaryLight),
-      labelStyle: const TextStyle(color: AppColors.textSecondary),
-      filled: true,
-      fillColor: AppColors.surface,
-      contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-      enabledBorder: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(12.0),
-        borderSide: BorderSide(color: AppColors.textSecondary.withOpacity(0.2)),
-      ),
-      focusedBorder: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(12.0),
-        borderSide: const BorderSide(color: AppColors.primary, width: 2.0),
-      ),
-      errorBorder: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(12.0),
-        borderSide: const BorderSide(color: AppColors.error, width: 1.0),
-      ),
-      focusedErrorBorder: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(12.0),
-        borderSide: const BorderSide(color: AppColors.error, width: 2.0),
-      ),
-    );
-  }
-
   void _showStyledSnackBar(String message, {bool isError = false}) {
     if (!mounted) return;
     ScaffoldMessenger.of(context).showSnackBar(
@@ -585,67 +342,62 @@ class _StorageHomeState extends State<StorageHome>
   }
 
   @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      backgroundColor: AppColors.background,
+      appBar: AppBar(
+        title: const Text('Склад'),
+        backgroundColor: AppColors.primary,
+        foregroundColor: AppColors.surface,
+        elevation: 0,
+        bottom: TabBar(
+          controller: _tabController,
+          indicatorColor: AppColors.surface,
+          labelColor: AppColors.surface,
+          unselectedLabelColor: AppColors.surface.withOpacity(0.7),
+          tabAlignment: TabAlignment.fill,
+          tabs: const [
+            Tab(icon: Icon(Icons.local_shipping_outlined), text: 'Поставки'),
+            Tab(icon: Icon(Icons.inventory_2_outlined), text: 'Товары'),
+            Tab(icon: Icon(Icons.person_outline), text: 'Профиль'),
+          ],
+        ),
+      ),
+      body: TabBarView(
+        controller: _tabController,
+        children: [
+          SuppliesTab(
+            assignedStore: assignedStore,
+            isLoadingSupplies: _isLoadingSupplies,
+            deliveries: _deliveries,
+            onAcceptDelivery: _acceptDelivery,
+            onRejectDelivery: _rejectDelivery,
+          ),
+          ProductsTab(
+            assignedStore: assignedStore,
+            isLoadingProducts: _isLoadingProducts,
+            storeProducts: _storeProducts,
+            showQrDialog: _showQrDialog,
+          ),
+          StorageProfileTab(
+            isLoadingProfile: isLoadingProfile,
+            mail: mail,
+            passwordMasked: passwordMasked,
+            usernameController: _usernameController,
+            passwordController: _passwordController,
+            onUpdateProfile: _updateProfile,
+            onLogout: () => _logout(context),
+          ),
+        ],
+      ),
+    );
+  }
+
+  @override
   void dispose() {
     _tabController.dispose();
     _usernameController.dispose();
     _passwordController.dispose();
     super.dispose();
-  }
-}
-
-class _FadeInSlideUp extends StatefulWidget {
-  final Widget child;
-  final Duration delay;
-  final Duration duration;
-
-  const _FadeInSlideUp({
-    required this.child,
-    this.delay = Duration.zero,
-    // ignore: unused_element_parameter
-    this.duration = const Duration(milliseconds: 500),
-  });
-
-  @override
-  State<_FadeInSlideUp> createState() => _FadeInSlideUpState();
-}
-
-class _FadeInSlideUpState extends State<_FadeInSlideUp>
-    with SingleTickerProviderStateMixin {
-  late AnimationController _controller;
-  late Animation<Offset> _slideAnimation;
-  late Animation<double> _fadeAnimation;
-
-  @override
-  void initState() {
-    super.initState();
-    _controller = AnimationController(vsync: this, duration: widget.duration);
-
-    _slideAnimation = Tween<Offset>(
-      begin: const Offset(0, 0.3),
-      end: Offset.zero,
-    ).animate(CurvedAnimation(parent: _controller, curve: Curves.easeOutCubic));
-
-    _fadeAnimation = Tween<double>(
-      begin: 0.0,
-      end: 1.0,
-    ).animate(CurvedAnimation(parent: _controller, curve: Curves.easeOut));
-
-    Future.delayed(widget.delay, () {
-      if (mounted) _controller.forward();
-    });
-  }
-
-  @override
-  void dispose() {
-    _controller.dispose();
-    super.dispose();
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return FadeTransition(
-      opacity: _fadeAnimation,
-      child: SlideTransition(position: _slideAnimation, child: widget.child),
-    );
   }
 }
