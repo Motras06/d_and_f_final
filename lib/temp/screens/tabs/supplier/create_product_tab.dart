@@ -1,7 +1,7 @@
 // lib/screens/create_product_tab.dart
 import 'dart:io';
 import 'package:flutter/material.dart';
-import '/app_colors.dart';
+import '../../../app_colors.dart';
 
 class CreateProductTab extends StatelessWidget {
   final TextEditingController nameController;

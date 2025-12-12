@@ -2,9 +2,9 @@
 // (Minor changes: Update role strings to match DB - 'storage' becomes 'storekeeper' in navigation, but keep UI labels)
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import '../models/roles.dart';
-import '../screens/auth_screen.dart';
-import '/app_colors.dart';
+//import '../models/roles.dart';
+import 'auth_screen.dart';
+import '../app_colors.dart';
 
 class RoleItem {
   final Role role;
@@ -15,9 +15,9 @@ class RoleItem {
 }
 
 final List<RoleItem> _roleItems = [
-  RoleItem(Role.user, 'Пользователь', Icons.person_outline),
-  RoleItem(Role.storage, 'Склад', Icons.inventory_2_outlined),
-  RoleItem(Role.supplier, 'Поставщик', Icons.local_shipping_outlined),
+  // RoleItem(Role.user, 'Пользователь', Icons.person_outline),
+  // RoleItem(Role.storage, 'Склад', Icons.inventory_2_outlined),
+  // RoleItem(Role.supplier, 'Поставщик', Icons.local_shipping_outlined),
 ];
 
 class _RoleButton extends StatelessWidget {
@@ -113,7 +113,7 @@ class RoleSelectScreen extends StatefulWidget {
 
 class _RoleSelectScreenState extends State<RoleSelectScreen>
     with SingleTickerProviderStateMixin {
-  Role? _selectedRole;
+  //Role? _selectedRole;
   late AnimationController _animationController;
 
   late final Animation<Offset> _slideAnimation;
@@ -148,12 +148,12 @@ class _RoleSelectScreenState extends State<RoleSelectScreen>
     super.dispose();
   }
 
-  void _selectRole(Role role) {
-    setState(() {
-      HapticFeedback.lightImpact();
-      _selectedRole = role;
-    });
-  }
+  // void _selectRole(Role role) {
+  //   setState(() {
+  //     HapticFeedback.lightImpact();
+  //     // _selectedRole = role;
+  //   });
+  // }
 
   @override
   Widget build(BuildContext context) {
@@ -214,87 +214,87 @@ class _RoleSelectScreenState extends State<RoleSelectScreen>
                         ),
                       ),
                       const SizedBox(height: 12),
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceAround,
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: _roleItems.map((item) {
-                          return _RoleButton(
-                            item: item,
-                            isSelected: _selectedRole == item.role,
-                            onTap: () => _selectRole(item.role),
-                          );
-                        }).toList(),
-                      ),
+                      // Row(
+                      //   mainAxisAlignment: MainAxisAlignment.spaceAround,
+                      //   crossAxisAlignment: CrossAxisAlignment.start,
+                      //   children: _roleItems.map((item) {
+                      //     return _RoleButton(
+                      //       item: item,
+                      //       isSelected: _selectedRole == item.role,
+                      //       onTap: () => _selectRole(item.role),
+                      //     );
+                      //   }).toList(),
+                      // ),
                       const SizedBox(height: 20),
-                      ElevatedButton(
-                        onPressed: _selectedRole == null
-                            ? null
-                            : () {
-                                HapticFeedback.mediumImpact();
-                                Navigator.push(
-                                  context,
-                                  MaterialPageRoute(
-                                    builder: (_) => AuthScreen(
-                                      role: roleToString(_selectedRole!),
-                                      isRegister: false,
-                                    ),
-                                  ),
-                                );
-                              },
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: AppColors.primary,
-                          foregroundColor: AppColors.surface,
-                          padding: const EdgeInsets.symmetric(vertical: 14.0),
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(12.0),
-                          ),
-                          elevation: 5,
-                        ),
-                        child: const Text(
-                          'Авторизация',
-                          style: TextStyle(
-                            fontSize: 16,
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
-                      ),
+                      // ElevatedButton(
+                      //   onPressed: _selectedRole == null
+                      //       ? null
+                      //       : () {
+                      //           HapticFeedback.mediumImpact();
+                      //           Navigator.push(
+                      //             context,
+                      //             MaterialPageRoute(
+                      //               builder: (_) => AuthScreen(
+                      //                 role: roleToString(_selectedRole!),
+                      //                 isRegister: false,
+                      //               ),
+                      //             ),
+                      //           );
+                      //         },
+                      //   style: ElevatedButton.styleFrom(
+                      //     backgroundColor: AppColors.primary,
+                      //     foregroundColor: AppColors.surface,
+                      //     padding: const EdgeInsets.symmetric(vertical: 14.0),
+                      //     shape: RoundedRectangleBorder(
+                      //       borderRadius: BorderRadius.circular(12.0),
+                      //     ),
+                      //     elevation: 5,
+                      //   ),
+                      //   child: const Text(
+                      //     'Авторизация',
+                      //     style: TextStyle(
+                      //       fontSize: 16,
+                      //       fontWeight: FontWeight.bold,
+                      //     ),
+                      //   ),
+                      // ),
                       const SizedBox(height: 12),
-                      OutlinedButton(
-                        onPressed: _selectedRole == null
-                            ? null
-                            : () {
-                                HapticFeedback.mediumImpact();
-                                Navigator.push(
-                                  context,
-                                  MaterialPageRoute(
-                                    builder: (_) => AuthScreen(
-                                      role: roleToString(_selectedRole!),
-                                      isRegister: true,
-                                    ),
-                                  ),
-                                );
-                              },
-                        style: OutlinedButton.styleFrom(
-                          foregroundColor: AppColors.primary,
-                          side: BorderSide(
-                            color: _selectedRole == null
-                                ? Colors.grey
-                                : AppColors.primary,
-                            width: 2,
-                          ),
-                          padding: const EdgeInsets.symmetric(vertical: 14.0),
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(12.0),
-                          ),
-                        ),
-                        child: const Text(
-                          'Регистрация',
-                          style: TextStyle(
-                            fontSize: 16,
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
-                      ),
+                      // OutlinedButton(
+                      //   onPressed: _selectedRole == null
+                      //       ? null
+                      //       : () {
+                      //           HapticFeedback.mediumImpact();
+                      //           Navigator.push(
+                      //             context,
+                      //             MaterialPageRoute(
+                      //               builder: (_) => AuthScreen(
+                      //                 role: roleToString(_selectedRole!),
+                      //                 isRegister: true,
+                      //               ),
+                      //             ),
+                      //           );
+                      //         },
+                      //   style: OutlinedButton.styleFrom(
+                      //     foregroundColor: AppColors.primary,
+                      //     side: BorderSide(
+                      //       color: _selectedRole == null
+                      //           ? Colors.grey
+                      //           : AppColors.primary,
+                      //       width: 2,
+                      //     ),
+                      //     padding: const EdgeInsets.symmetric(vertical: 14.0),
+                      //     shape: RoundedRectangleBorder(
+                      //       borderRadius: BorderRadius.circular(12.0),
+                      //     ),
+                      //   ),
+                      //   child: const Text(
+                      //     'Регистрация',
+                      //     style: TextStyle(
+                      //       fontSize: 16,
+                      //       fontWeight: FontWeight.bold,
+                      //     ),
+                      //   ),
+                      // ),
                     ],
                   ),
                 ),

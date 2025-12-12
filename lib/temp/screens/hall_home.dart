@@ -3,8 +3,8 @@ import 'package:mobile_scanner/mobile_scanner.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'dart:async';
 import '../services/local_storage.dart';
-import '../screens/role_select_screen.dart';
-import '/app_colors.dart';
+import 'role_select_screen.dart';
+import '../app_colors.dart';
 import '../repository.dart';
 
 class ProductDetailScreen extends StatelessWidget {

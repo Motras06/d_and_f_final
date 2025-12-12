@@ -6,7 +6,7 @@ import 'hall_home.dart';
 import 'storage_home.dart';
 import 'supplier_home.dart';
 import '../services/local_storage.dart';
-import '/app_colors.dart';
+import '../app_colors.dart';
 import '../repository.dart';
 
 class AuthScreen extends StatefulWidget {

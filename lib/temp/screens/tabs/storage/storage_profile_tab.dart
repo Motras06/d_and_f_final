@@ -1,8 +1,7 @@
-// lib/screens/profile_tab.dart
 import 'package:flutter/material.dart';
-import '/app_colors.dart';
+import '../../../app_colors.dart';
 
-class ProfileTab extends StatelessWidget {
+class StorageProfileTab extends StatelessWidget {
   final bool isLoadingProfile;
   final String? mail;
   final String? passwordMasked;
@@ -11,7 +10,7 @@ class ProfileTab extends StatelessWidget {
   final VoidCallback onUpdateProfile;
   final VoidCallback onLogout;
 
-  const ProfileTab({
+  const StorageProfileTab({
     super.key,
     required this.isLoadingProfile,
     required this.mail,
@@ -154,7 +153,7 @@ class ProfileTab extends StatelessWidget {
   }
 }
 
-// Вынесем _FadeInSlideUp сюда, чтобы не импортировать в каждый файл
+// Вынесем _FadeInSlideUp сюда
 class _FadeInSlideUp extends StatefulWidget {
   final Widget child;
   final Duration delay;
@@ -181,11 +180,10 @@ class _FadeInSlideUpState extends State<_FadeInSlideUp>
   void initState() {
     super.initState();
     _controller = AnimationController(vsync: this, duration: widget.duration);
-    _slideAnimation = Tween<Offset>(
-      begin: const Offset(0, 0.3),
-      end: Offset.zero,
-    ).animate(CurvedAnimation(parent: _controller, curve: Curves.easeOutCubic));
-    _fadeAnimation = Tween<double>(begin: 0.0, end: 1.0).animate(CurvedAnimation(parent: _controller, curve: Curves.easeOut));
+    _slideAnimation = Tween<Offset>(begin: const Offset(0, 0.3), end: Offset.zero)
+        .animate(CurvedAnimation(parent: _controller, curve: Curves.easeOutCubic));
+    _fadeAnimation = Tween<double>(begin: 0.0, end: 1.0)
+        .animate(CurvedAnimation(parent: _controller, curve: Curves.easeOut));
 
     Future.delayed(widget.delay, () {
       if (mounted) _controller.forward();
