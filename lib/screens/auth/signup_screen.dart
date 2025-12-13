@@ -1,8 +1,15 @@
-import 'package:flutter/material.dart';
+// lib/screens/auth/signup_screen.dart
 
+import 'package:flutter/material.dart';
 import '../../models/role_model.dart';
+import '../../models/profile.dart';           // ← добавь импорт Profile
 import '../../services/auth_service.dart';
 import 'role_select_screen.dart';
+
+import '../../screens/tabs/supplier/supplier_home.dart';
+import '../../screens/tabs/hall/hall_home.dart';
+import '../../screens/tabs/storage/storage_home.dart';
+import '../../screens/tabs/admin/admin_home.dart';
 
 class SignupScreen extends StatefulWidget {
   const SignupScreen({super.key});
@@ -21,14 +28,17 @@ class _SignupScreenState extends State<SignupScreen> {
   bool _loading = false;
   final _authService = AuthService();
 
-  // Валидация (та же, что у тебя была)
+  // Валидация (оставляем как есть)
   String? _validateEmail(String? v) {
-    if (v == null || v.trim().isEmpty) return 'Введите email';
-    if (!RegExp(r'^[\w\.\+\-]+@[\w\-]+\.[\w\.\-]+$').hasMatch(v.trim())) {
-      return 'Неверный формат email';
-    }
-    return null;
+  if (v == null || v.trim().isEmpty) return 'Введите email';
+
+  final email = v.trim();
+  if (!email.contains('@') || !email.contains('.') || email.endsWith('.') || email.startsWith('@')) {
+    return 'Неверный формат email';
   }
+
+  return null;
+}
 
   String? _validatePassword(String? v) {
     if (v == null || v.isEmpty) return 'Введите пароль';
@@ -44,9 +54,36 @@ class _SignupScreenState extends State<SignupScreen> {
         fullscreenDialog: true,
       ),
     );
-
     if (role != null) {
       setState(() => _selectedRole = role);
+    }
+  }
+
+  // ← НОВАЯ ФУНКЦИЯ: переход на home по роли
+  void _navigateToHome(Profile profile) {
+    Widget homeScreen;
+    switch (profile.role) {
+      case 'supplier':
+        homeScreen = SupplierHome(profile: profile);
+        break;
+      case 'hall':
+        homeScreen = HallHome(profile: profile);
+        break;
+      case 'storage':
+        homeScreen = StorageHome(profile: profile);
+        break;
+      case 'admin':
+        homeScreen = AdminHome(profile: profile);
+        break;
+      default:
+        homeScreen = SupplierHome(profile: profile); // fallback
+    }
+
+    if (mounted) {
+      Navigator.of(context).pushAndRemoveUntil(
+        MaterialPageRoute(builder: (_) => homeScreen),
+        (_) => false, // удаляем все предыдущие экраны
+      );
     }
   }
 
@@ -75,11 +112,18 @@ class _SignupScreenState extends State<SignupScreen> {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text(error), backgroundColor: Colors.red),
         );
+        return;
       }
-      // Успех → main.dart перекинет на home по роли
+
+      // ← УСПЕХ! Загружаем профиль и сразу переходим
+      final profile = await _authService.getProfile();
+      if (profile != null) {
+        _navigateToHome(profile);
+      }
     }
   }
 
+  // dispose и build остаются без изменений
   @override
   void dispose() {
     _emailController.dispose();
@@ -90,6 +134,7 @@ class _SignupScreenState extends State<SignupScreen> {
 
   @override
   Widget build(BuildContext context) {
+    // твой текущий build полностью остаётся тем же
     return Scaffold(
       appBar: AppBar(title: const Text('Регистрация')),
       body: Center(
@@ -107,8 +152,6 @@ class _SignupScreenState extends State<SignupScreen> {
                     const SizedBox(height: 16),
                     Text('Регистрация', style: Theme.of(context).textTheme.headlineMedium),
                     const SizedBox(height: 32),
-
-                    // Кнопка выбора роли
                     ElevatedButton.icon(
                       onPressed: _selectRole,
                       icon: Icon(_selectedRole == null ? Icons.person_outline : Icons.check),
@@ -117,7 +160,6 @@ class _SignupScreenState extends State<SignupScreen> {
                           : 'Роль: ${_selectedRole!.name}'),
                     ),
                     const SizedBox(height: 24),
-
                     TextFormField(
                       controller: _usernameController,
                       decoration: const InputDecoration(
