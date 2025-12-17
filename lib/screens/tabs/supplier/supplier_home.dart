@@ -5,7 +5,7 @@ import 'package:d_and_f_final/models/profile.dart';
 import 'package:d_and_f_final/services/auth_service.dart';
 import 'package:d_and_f_final/screens/auth/login_screen.dart';
 
-import 'create_delivery_tab.dart';
+import 'my_products_tab.dart';
 import 'deliveries_tab.dart';
 import 'profile_tab.dart';
 import '../../settings/settings_screen.dart'; // общий экран настроек
@@ -27,7 +27,7 @@ class _SupplierHomeState extends State<SupplierHome> {
   void initState() {
     super.initState();
     _pages = [
-      const CreateDeliveryTab(),
+      MyProductsTab(profile: widget.profile),
       const DeliveriesTab(),
       ProfileTab(profile: widget.profile),
     ];

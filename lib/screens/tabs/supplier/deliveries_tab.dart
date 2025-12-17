@@ -14,7 +14,7 @@ class DeliveriesTab extends StatelessWidget {
           Icon(Icons.history, size: 80, color: Colors.grey),
           SizedBox(height: 16),
           Text(
-            'История поставок',
+            'Все товары',
             style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
           ),
           SizedBox(height: 8),
