@@ -28,7 +28,7 @@ class _SupplierHomeState extends State<SupplierHome> {
     super.initState();
     _pages = [
       MyProductsTab(profile: widget.profile),
-      const DeliveriesTab(),
+      NewDeliveryTab(profile: widget.profile),
       ProfileTab(profile: widget.profile),
     ];
   }
