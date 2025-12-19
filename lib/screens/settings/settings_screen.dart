@@ -1,5 +1,6 @@
 // lib/screens/settings/settings_screen.dart
 
+import 'package:d_and_f_final/screens/settings/assign_stores_screen.dart';
 import 'package:flutter/material.dart';
 
 class SettingsScreen extends StatelessWidget {
@@ -8,9 +9,7 @@ class SettingsScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('Настройки'),
-      ),
+      appBar: AppBar(title: const Text('Настройки')),
       body: ListView(
         children: [
           ListTile(
@@ -46,6 +45,17 @@ class SettingsScreen extends StatelessWidget {
                 applicationName: 'D&F',
                 applicationVersion: '1.0.0',
                 applicationIcon: const Icon(Icons.local_shipping, size: 50),
+              );
+            },
+          ),
+          ListTile(
+            leading: const Icon(Icons.link),
+            title: const Text('Закрепление магазинов'),
+            subtitle: const Text('Привязка пользователей к магазинам'),
+            onTap: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (_) => const AssignStoresScreen()),
               );
             },
           ),

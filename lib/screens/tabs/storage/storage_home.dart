@@ -27,8 +27,8 @@ class _StorageHomeState extends State<StorageHome> {
   void initState() {
     super.initState();
     _pages = [
-      const ReceiveGoodsTab(),           // Приём товаров
-      const StockAvailabilityTab(),       // Наличие
+      ReceiveGoodsTab(profile: widget.profile),           // Приём товаров
+      StockAvailabilityTab(profile: widget.profile),       // Наличие
       ProfileTab(profile: widget.profile), // Профиль
     ];
   }
