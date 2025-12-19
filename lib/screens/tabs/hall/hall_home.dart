@@ -27,7 +27,7 @@ class _HallHomeState extends State<HallHome> {
   void initState() {
     super.initState();
     _pages = [
-      const ProductsTab(),                // Товары
+      ProductsTab(profile: widget.profile),                // Товары
       const CameraTab(),                  // Камера
       ProfileTab(profile: widget.profile), // Профиль
     ];
