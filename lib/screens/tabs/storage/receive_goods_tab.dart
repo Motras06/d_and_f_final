@@ -1,8 +1,8 @@
 // lib/screens/tabs/storage/receive_goods_tab.dart
 
 import 'package:flutter/material.dart';
-import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:d_and_f_final/models/profile.dart';
+import '/services/delivery_service.dart';
 
 class ReceiveGoodsTab extends StatefulWidget {
   final Profile profile;
@@ -12,18 +12,48 @@ class ReceiveGoodsTab extends StatefulWidget {
   State<ReceiveGoodsTab> createState() => _ReceiveGoodsTabState();
 }
 
-class _ReceiveGoodsTabState extends State<ReceiveGoodsTab> {
+class _ReceiveGoodsTabState extends State<ReceiveGoodsTab>
+    with SingleTickerProviderStateMixin {
   String? storeName;
   List<Map<String, dynamic>> pendingDeliveries = [];
   bool isLoading = true;
   String? errorMessage;
 
-  final supabase = Supabase.instance.client;
+  final DeliveryService _deliveryService = DeliveryService();
+
+  late AnimationController _animationController;
+  late Animation<double> _fadeAnimation;
+  late Animation<Offset> _slideAnimation;
 
   @override
   void initState() {
     super.initState();
     loadData();
+
+    _animationController = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 800),
+    );
+
+    _fadeAnimation = Tween<double>(begin: 0.0, end: 1.0).animate(
+      CurvedAnimation(parent: _animationController, curve: Curves.easeInOut),
+    );
+
+    _slideAnimation =
+        Tween<Offset>(begin: const Offset(0, 0.3), end: Offset.zero).animate(
+          CurvedAnimation(
+            parent: _animationController,
+            curve: Curves.easeOutCubic,
+          ),
+        );
+
+    _animationController.forward();
+  }
+
+  @override
+  void dispose() {
+    _animationController.dispose();
+    super.dispose();
   }
 
   Future<void> loadData() async {
@@ -33,82 +63,16 @@ class _ReceiveGoodsTabState extends State<ReceiveGoodsTab> {
     });
 
     try {
-      // 1. Находим магазин кладовщика
-      final assignment = await supabase
-          .from('store_assignments')
-          .select('store_name')
-          .eq('user_id', widget.profile.id)
-          .limit(1)
-          .maybeSingle();
-
-      if (assignment == null || assignment['store_name'] == null) {
-        setState(() {
-          errorMessage = 'Магазин не закреплён за вами';
-          isLoading = false;
-        });
-        return;
-      }
-
-      final currentStore = assignment['store_name'] as String;
-      setState(() => storeName = currentStore);
-
-      // 2. Находим ожидающие поставки для этого магазина
-      final deliveries = await supabase
-          .from('deliveries')
-          .select('id, supplier_id, created_at')
-          .eq('store_name', currentStore)
-          .eq('status', 'pending')
-          .order('created_at', ascending: false);
-
-      List<Map<String, dynamic>> deliveriesWithItems = [];
-
-      for (final delivery in deliveries) {
-        final deliveryId = delivery['id'] as int;
-        final supplierId = delivery['supplier_id'] as String?;
-
-        // Получаем email поставщика (если есть)
-        String supplierEmail = 'Неизвестно';
-        if (supplierId != null) {
-          try {
-            final profile = await supabase
-                .from('profiles')
-                .select('mail')
-                .eq('id', supplierId)
-                .maybeSingle();
-            supplierEmail = profile?['mail'] ?? 'Неизвестно';
-          } catch (_) {
-            supplierEmail = 'Ошибка';
-          }
-        }
-
-        // Получаем товары поставки
-        final items = await supabase
-            .from('delivery_items')
-            .select('product_id, quantity')
-            .eq('delivery_id', deliveryId);
-
-        int totalQuantity = 0;
-        for (final item in items) {
-          final qty = item['quantity'] as num?;
-          if (qty != null) totalQuantity += qty.toInt();
-        }
-
-        deliveriesWithItems.add({
-          'id': deliveryId,
-          'supplier_email': supplierEmail,
-          'created_at': delivery['created_at'],
-          'total_items': totalQuantity,
-          'items': items,
-        });
-      }
+      final data = await _deliveryService.loadPendingDeliveries(widget.profile);
 
       setState(() {
-        pendingDeliveries = deliveriesWithItems;
+        storeName = data['storeName'];
+        pendingDeliveries = data['deliveries'] as List<Map<String, dynamic>>;
         isLoading = false;
       });
     } catch (e) {
       setState(() {
-        errorMessage = 'Ошибка загрузки: $e';
+        errorMessage = e.toString();
         isLoading = false;
       });
     }
@@ -116,102 +80,319 @@ class _ReceiveGoodsTabState extends State<ReceiveGoodsTab> {
 
   Future<void> acceptDelivery(int deliveryId) async {
     try {
-      final items = await supabase
-          .from('delivery_items')
-          .select('product_id, quantity')
-          .eq('delivery_id', deliveryId);
-
-      for (final item in items) {
-        final productId = item['product_id'] as int;
-        final qty = (item['quantity'] as num?)?.toInt() ?? 0;
-
-        if (qty <= 0) continue;
-
-        final existing = await supabase
-            .from('store_stock')
-            .select('quantity')
-            .eq('store_name', storeName!)
-            .eq('product_id', productId)
-            .maybeSingle();
-
-        final currentQty = (existing?['quantity'] as num?)?.toInt() ?? 0;
-        final newQty = currentQty + qty;
-
-        await supabase.from('store_stock').upsert({
-          'store_name': storeName!,
-          'product_id': productId,
-          'quantity': newQty,
-        });
-      }
-
-      // Меняем статус поставки
-      await supabase.from('deliveries').update({'status': 'accepted'}).eq('id', deliveryId);
+      await _deliveryService.acceptDelivery(storeName!, deliveryId);
 
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Поставка принята'), backgroundColor: Colors.green),
+        SnackBar(
+          content: const Text('Поставка принята'),
+          backgroundColor: Colors.green,
+          behavior: SnackBarBehavior.floating,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(12),
+          ),
+        ),
       );
 
-      loadData(); // обновляем список
+      loadData();
     } catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Ошибка при приёме: $e'), backgroundColor: Colors.red),
+        SnackBar(
+          content: Text('Ошибка при приёме: $e'),
+          backgroundColor: Theme.of(context).colorScheme.error,
+          behavior: SnackBarBehavior.floating,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(12),
+          ),
+        ),
+      );
+    }
+  }
+
+  Future<void> rejectDelivery(int deliveryId) async {
+    final confirm = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Отказать в поставке?'),
+        content: const Text(
+          'Поставка будет удалена и не сможет быть принята позже.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text('Отмена'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(context, true),
+            child: const Text('Отказать', style: TextStyle(color: Colors.red)),
+          ),
+        ],
+      ),
+    );
+
+    if (confirm != true) return;
+
+    try {
+      await _deliveryService.rejectDelivery(deliveryId);
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: const Text('Поставка отклонена и удалена'),
+          backgroundColor: Colors.orange,
+          behavior: SnackBarBehavior.floating,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(12),
+          ),
+        ),
+      );
+
+      loadData();
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Ошибка при отклонении: $e'),
+          backgroundColor: Theme.of(context).colorScheme.error,
+        ),
       );
     }
   }
 
   @override
   Widget build(BuildContext context) {
-    if (isLoading) {
-      return const Center(child: CircularProgressIndicator());
-    }
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
+    final backgroundColor = isDark ? Colors.grey[900] : Colors.blue[50];
 
-    if (errorMessage != null) {
-      return Center(child: Text(errorMessage!));
-    }
+    return Scaffold(
+      backgroundColor: backgroundColor,
+      body: SafeArea(
+        child: FadeTransition(
+          opacity: _fadeAnimation,
+          child: SlideTransition(
+            position: _slideAnimation,
+            child: RefreshIndicator(
+              onRefresh: loadData,
+              color: theme.colorScheme.primary,
+              child: isLoading
+                  ? Center(
+                      child: CircularProgressIndicator(
+                        color: theme.colorScheme.primary,
+                      ),
+                    )
+                  : errorMessage != null
+                  ? Center(
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Icon(
+                            Icons.error_outline,
+                            size: 80,
+                            color: theme.colorScheme.error,
+                          ),
+                          const SizedBox(height: 24),
+                          Text(
+                            errorMessage!,
+                            style: const TextStyle(fontSize: 18),
+                          ),
+                        ],
+                      ),
+                    )
+                  : pendingDeliveries.isEmpty
+                  ? Center(
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Icon(
+                            Icons.inventory_2_outlined,
+                            size: 100,
+                            color: Colors.grey[600],
+                          ),
+                          const SizedBox(height: 24),
+                          const Text(
+                            'Нет ожидающих поставок',
+                            style: TextStyle(
+                              fontSize: 24,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                          const SizedBox(height: 12),
+                          Text(
+                            'Все поставки приняты',
+                            style: TextStyle(
+                              fontSize: 16,
+                              color: Colors.grey[600],
+                            ),
+                          ),
+                        ],
+                      ),
+                    )
+                  : Column(
+                      children: [
+                        // Заголовок с магазином
+                        Padding(
+                          padding: const EdgeInsets.all(20.0),
+                          child: Card(
+                            elevation: 6,
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(24),
+                            ),
+                            color: theme.cardColor,
+                            child: Padding(
+                              padding: const EdgeInsets.symmetric(vertical: 20),
+                              child: Row(
+                                mainAxisAlignment: MainAxisAlignment.center,
+                                children: [
+                                  Icon(
+                                    Icons.store_mall_directory_outlined,
+                                    size: 32,
+                                    color: theme.colorScheme.primary,
+                                  ),
+                                  const SizedBox(width: 16),
+                                  Text(
+                                    'Магазин: $storeName',
+                                    style: theme.textTheme.titleLarge?.copyWith(
+                                      fontWeight: FontWeight.bold,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ),
+                        ),
 
-    if (pendingDeliveries.isEmpty) {
-      return const Center(
-        child: Text('Нет ожидающих поставок', style: TextStyle(fontSize: 18)),
-      );
-    }
+                        // Список поставок
+                        Expanded(
+                          child: ListView.builder(
+                            padding: const EdgeInsets.symmetric(horizontal: 16),
+                            itemCount: pendingDeliveries.length,
+                            itemBuilder: (context, index) {
+                              final delivery = pendingDeliveries[index];
 
-    return Column(
-      children: [
-        Padding(
-          padding: const EdgeInsets.all(16),
-          child: Text(
-            'Магазин: $storeName',
-            style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                              return AnimatedContainer(
+                                duration: const Duration(milliseconds: 300),
+                                curve: Curves.easeInOut,
+                                margin: const EdgeInsets.only(bottom: 16),
+                                child: Card(
+                                  elevation: 8,
+                                  shape: RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(24),
+                                  ),
+                                  color: theme.cardColor,
+                                  shadowColor: theme.shadowColor.withOpacity(
+                                    0.3,
+                                  ),
+                                  child: ClipRRect(
+                                    borderRadius: BorderRadius.circular(24),
+                                    child: Material(
+                                      color: Colors.transparent,
+                                      child: InkWell(
+                                        onTap: () =>
+                                            acceptDelivery(delivery['id']),
+                                        splashColor: Colors.green.withOpacity(
+                                          0.2,
+                                        ),
+                                        child: Padding(
+                                          padding: const EdgeInsets.all(20.0),
+                                          child: Row(
+                                            children: [
+                                              // Иконка поставки
+                                              Container(
+                                                padding: const EdgeInsets.all(
+                                                  16,
+                                                ),
+                                                decoration: BoxDecoration(
+                                                  color: Colors.green
+                                                      .withOpacity(0.1),
+                                                  borderRadius:
+                                                      BorderRadius.circular(20),
+                                                ),
+                                                child: Icon(
+                                                  Icons.local_shipping_outlined,
+                                                  size: 40,
+                                                  color: Colors.green,
+                                                ),
+                                              ),
+                                              const SizedBox(width: 20),
+
+                                              // Информация
+                                              Expanded(
+                                                child: Column(
+                                                  crossAxisAlignment:
+                                                      CrossAxisAlignment.start,
+                                                  children: [
+                                                    Text(
+                                                      'Поставка #${delivery['id']}',
+                                                      style: theme
+                                                          .textTheme
+                                                          .titleLarge
+                                                          ?.copyWith(
+                                                            fontWeight:
+                                                                FontWeight.bold,
+                                                          ),
+                                                    ),
+                                                    const SizedBox(height: 8),
+                                                    Text(
+                                                      'От: ${delivery['supplier_email']}',
+                                                      style: theme
+                                                          .textTheme
+                                                          .bodyLarge,
+                                                    ),
+                                                    Text(
+                                                      'Товаров: ${delivery['total_items']}',
+                                                      style: theme
+                                                          .textTheme
+                                                          .bodyMedium,
+                                                    ),
+                                                  ],
+                                                ),
+                                              ),
+
+                                              // Кнопки действий
+                                              Column(
+                                                children: [
+                                                  IconButton(
+                                                    onPressed: () =>
+                                                        acceptDelivery(
+                                                          delivery['id'],
+                                                        ),
+                                                    icon: const Icon(
+                                                      Icons.check_circle,
+                                                      size: 48,
+                                                      color: Colors.green,
+                                                    ),
+                                                    tooltip: 'Принять поставку',
+                                                  ),
+                                                  IconButton(
+                                                    onPressed: () =>
+                                                        rejectDelivery(
+                                                          delivery['id'],
+                                                        ),
+                                                    icon: const Icon(
+                                                      Icons.cancel,
+                                                      size: 48,
+                                                      color: Colors.red,
+                                                    ),
+                                                    tooltip:
+                                                        'Отказать в поставке',
+                                                  ),
+                                                ],
+                                              ),
+                                            ],
+                                          ),
+                                        ),
+                                      ),
+                                    ),
+                                  ),
+                                ),
+                              );
+                            },
+                          ),
+                        ),
+                      ],
+                    ),
+            ),
           ),
         ),
-        Expanded(
-          child: ListView.builder(
-            itemCount: pendingDeliveries.length,
-            itemBuilder: (context, index) {
-              final delivery = pendingDeliveries[index];
-
-              return Card(
-                margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                child: ListTile(
-                  title: Text('Поставка #${delivery['id']}'),
-                  subtitle: Text(
-                    'От: ${delivery['supplier_email']}\nТоваров: ${delivery['total_items']}',
-                  ),
-                  isThreeLine: true,
-                  trailing: IconButton(
-                    icon: const Icon(Icons.check_circle, color: Colors.green),
-                    onPressed: () => acceptDelivery(delivery['id']),
-                  ),
-                  onTap: () {
-                    // Можно добавить детали, но пока просто приём по тапу на карточку
-                    acceptDelivery(delivery['id']);
-                  },
-                ),
-              );
-            },
-          ),
-        ),
-      ],
+      ),
     );
   }
 }

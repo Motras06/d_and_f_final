@@ -1,5 +1,5 @@
-import 'package:d_and_f_final/screens/settings/app_colors.dart';
-import 'package:device_preview/device_preview.dart';
+// lib/main.dart
+
 import 'package:flutter/material.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:provider/provider.dart';
@@ -11,25 +11,23 @@ import 'screens/tabs/hall/hall_home.dart';
 import 'screens/tabs/storage/storage_home.dart';
 import 'screens/tabs/admin/admin_home.dart';
 
+import 'screens/settings/app_colors.dart';
 import 'services/auth_service.dart';
-import 'services/theme_service.dart';        // ← Новый сервис
+import 'services/theme_service.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
+  // Загружаем .env файл
   await dotenv.load(fileName: ".env");
 
+  // Инициализируем Supabase
   await Supabase.initialize(
     url: dotenv.env['SUPABASE_URL']!,
     anonKey: dotenv.env['SUPABASE_ANON_KEY']!,
   );
 
-  runApp(
-    DevicePreview(
-      enabled: !bool.fromEnvironment('dart.vm.product'),
-      builder: (context) => const MainApp(),
-    ),
-  );
+  runApp(const MainApp());
 }
 
 class MainApp extends StatefulWidget {
@@ -115,12 +113,11 @@ class _MainAppState extends State<MainApp> {
           return MaterialApp(
             title: 'D&F',
             debugShowCheckedModeBanner: false,
-            useInheritedMediaQuery: true,
-            locale: DevicePreview.locale(context),
-            builder: DevicePreview.appBuilder,
             theme: AppColors.light,
             darkTheme: AppColors.dark,
-            themeMode: themeService.isDarkMode ? ThemeMode.dark : ThemeMode.light,
+            themeMode: themeService.isDarkMode
+                ? ThemeMode.dark
+                : ThemeMode.light,
             home: _currentScreen,
           );
         },

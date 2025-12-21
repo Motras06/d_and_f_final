@@ -34,7 +34,9 @@ class ProductService {
       final fileBytes = await image.readAsBytes();
       final fileName = '${DateTime.now().millisecondsSinceEpoch}_${image.name}';
 
-      await _supabase.storage.from(bucketName).uploadBinary(
+      await _supabase.storage
+          .from(bucketName)
+          .uploadBinary(
             fileName,
             fileBytes,
             fileOptions: const FileOptions(upsert: true),
@@ -67,23 +69,44 @@ class ProductService {
 
     if (newImage != null) {
       final fileBytes = await newImage.readAsBytes();
-      final fileName = '${DateTime.now().millisecondsSinceEpoch}_${newImage.name}';
+      final fileName =
+          '${DateTime.now().millisecondsSinceEpoch}_${newImage.name}';
 
-      await _supabase.storage.from(bucketName).uploadBinary(
+      await _supabase.storage
+          .from(bucketName)
+          .uploadBinary(
             fileName,
             fileBytes,
             fileOptions: const FileOptions(upsert: true),
           );
 
-      updatedImageUrl = _supabase.storage.from(bucketName).getPublicUrl(fileName);
+      updatedImageUrl = _supabase.storage
+          .from(bucketName)
+          .getPublicUrl(fileName);
     }
 
-    await _supabase.from('products').update({
-      'name': name,
-      'country': country,
-      'price': price,
-      'about': about,
-      'image_url': updatedImageUrl,
-    }).eq('id', productId);
+    await _supabase
+        .from('products')
+        .update({
+          'name': name,
+          'country': country,
+          'price': price,
+          'about': about,
+          'image_url': updatedImageUrl,
+        })
+        .eq('id', productId);
+  }
+
+  Future<void> deleteProduct(int productId) async {
+    final supabase = Supabase.instance.client;
+
+    // 1. Удаляем все записи в delivery_items с этим product_id
+    await supabase.from('delivery_items').delete().eq('product_id', productId);
+
+    // 2. Удаляем все записи в store_stock с этим product_id
+    await supabase.from('store_stock').delete().eq('product_id', productId);
+
+    // 3. Теперь можно удалить сам товар
+    await supabase.from('products').delete().eq('id', productId);
   }
 }

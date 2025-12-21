@@ -3,7 +3,7 @@
 import 'package:flutter/material.dart';
 import 'package:d_and_f_final/models/product.dart';
 import 'package:d_and_f_final/models/profile.dart';
-import 'services/product_service.dart';
+import '../../../services/product_service.dart';
 import 'widgets/product_card.dart';
 import 'widgets/product_form_dialog.dart';
 

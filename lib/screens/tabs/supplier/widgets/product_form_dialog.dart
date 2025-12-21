@@ -5,7 +5,7 @@ import 'dart:io';
 import 'package:d_and_f_final/models/product.dart';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
-import 'package:d_and_f_final/screens/tabs/supplier/services/product_service.dart';
+import 'package:d_and_f_final/services/product_service.dart';
 
 class ProductFormDialog extends StatefulWidget {
   final ProductService productService;
@@ -76,12 +76,58 @@ class _ProductFormDialogState extends State<ProductFormDialog> with SingleTicker
     super.dispose();
   }
 
+  Future<void> _deleteProduct() async {
+    final confirm = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Удалить товар?'),
+        content: const Text('Это действие нельзя отменить. Товар будет удалён навсегда.'),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(context, false), child: const Text('Отмена')),
+          TextButton(
+            onPressed: () => Navigator.pop(context, true),
+            child: const Text('Удалить', style: TextStyle(color: Colors.red)),
+          ),
+        ],
+      ),
+    );
+
+    if (confirm != true) return;
+
+    setState(() => isUploading = true);
+
+    try {
+      await widget.productService.deleteProduct(widget.existingProduct!.id);
+
+      if (mounted) {
+        Navigator.pop(context, true); // возвращаем true — товар удалён
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Товар удалён'),
+            backgroundColor: Colors.orange,
+            behavior: SnackBarBehavior.floating,
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.all(Radius.circular(12))),
+          ),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Ошибка удаления: $e'),
+            backgroundColor: Theme.of(context).colorScheme.error,
+          ),
+        );
+      }
+    } finally {
+      if (mounted) setState(() => isUploading = false);
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final isEdit = widget.existingProduct != null;
-    // ignore: unused_local_variable
-    final isDark = theme.brightness == Brightness.dark;
 
     return AlertDialog(
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(28)),
@@ -222,6 +268,11 @@ class _ProductFormDialogState extends State<ProductFormDialog> with SingleTicker
           onPressed: () => Navigator.pop(context),
           child: Text('Отмена', style: TextStyle(color: theme.colorScheme.onSurface.withOpacity(0.7))),
         ),
+        if (isEdit)
+          TextButton(
+            onPressed: isUploading ? null : _deleteProduct,
+            child: const Text('Удалить товар', style: TextStyle(color: Colors.red, fontWeight: FontWeight.bold)),
+          ),
         ElevatedButton(
           onPressed: isUploading
               ? null
@@ -265,7 +316,7 @@ class _ProductFormDialogState extends State<ProductFormDialog> with SingleTicker
                     }
 
                     if (mounted) {
-                      Navigator.pop(context, true); // возвращаем true — товар изменён
+                      Navigator.pop(context, true);
                       ScaffoldMessenger.of(context).showSnackBar(
                         SnackBar(
                           content: Text(isEdit ? 'Товар обновлён!' : 'Товар создан!'),

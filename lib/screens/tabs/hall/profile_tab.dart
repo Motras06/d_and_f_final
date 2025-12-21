@@ -1,5 +1,6 @@
-// lib/screens/common/profile_tab.dart (или где у тебя лежит)
+// lib/screens/common/profile_tab.dart
 
+import 'package:d_and_f_final/screens/settings/app_colors.dart';
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:d_and_f_final/models/profile.dart';
@@ -14,24 +15,50 @@ class ProfileTab extends StatefulWidget {
   State<ProfileTab> createState() => _ProfileTabState();
 }
 
-class _ProfileTabState extends State<ProfileTab> {
+class _ProfileTabState extends State<ProfileTab>
+    with SingleTickerProviderStateMixin {
   late TextEditingController _usernameController;
   bool _isEditingUsername = false;
   bool _isLoading = false;
 
+  late AnimationController _animationController;
+  late Animation<double> _fadeAnimation;
+  late Animation<Offset> _slideAnimation;
+
   @override
   void initState() {
     super.initState();
-    _usernameController = TextEditingController(text: widget.profile.username ?? '');
+    _usernameController = TextEditingController(
+      text: widget.profile.username ?? '',
+    );
+
+    _animationController = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 800),
+    );
+
+    _fadeAnimation = Tween<double>(begin: 0.0, end: 1.0).animate(
+      CurvedAnimation(parent: _animationController, curve: Curves.easeInOut),
+    );
+
+    _slideAnimation =
+        Tween<Offset>(begin: const Offset(0, 0.3), end: Offset.zero).animate(
+          CurvedAnimation(
+            parent: _animationController,
+            curve: Curves.easeOutCubic,
+          ),
+        );
+
+    _animationController.forward();
   }
 
   @override
   void dispose() {
+    _animationController.dispose();
     _usernameController.dispose();
     super.dispose();
   }
 
-  // Сохранение имени
   Future<void> _saveUsername() async {
     final newUsername = _usernameController.text.trim();
     if (newUsername == widget.profile.username) {
@@ -40,6 +67,7 @@ class _ProfileTabState extends State<ProfileTab> {
     }
 
     setState(() => _isLoading = true);
+
     try {
       await Supabase.instance.client
           .from('profiles')
@@ -47,19 +75,32 @@ class _ProfileTabState extends State<ProfileTab> {
           .eq('id', widget.profile.id);
 
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Имя обновлено!'), backgroundColor: Colors.green),
+        SnackBar(
+          content: const Text('Имя обновлено!'),
+          backgroundColor: AppColors.success,
+          behavior: SnackBarBehavior.floating,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(12),
+          ),
+        ),
       );
       setState(() => _isEditingUsername = false);
     } catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Ошибка: $e'), backgroundColor: Colors.red),
+        SnackBar(
+          content: Text('Ошибка: $e'),
+          backgroundColor: Theme.of(context).colorScheme.error,
+          behavior: SnackBarBehavior.floating,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(12),
+          ),
+        ),
       );
     } finally {
-      setState(() => _isLoading = false);
+      if (mounted) setState(() => _isLoading = false);
     }
   }
 
-  // Смена пароля
   Future<void> _changePassword() async {
     final supabase = Supabase.instance.client;
     final auth = supabase.auth;
@@ -74,6 +115,9 @@ class _ProfileTabState extends State<ProfileTab> {
       context: context,
       builder: (context) => StatefulBuilder(
         builder: (context, setDialogState) => AlertDialog(
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(20),
+          ),
           title: const Text('Смена пароля'),
           content: SingleChildScrollView(
             child: Column(
@@ -83,27 +127,45 @@ class _ProfileTabState extends State<ProfileTab> {
                   TextField(
                     controller: oldPassController,
                     obscureText: true,
-                    decoration: const InputDecoration(
+                    decoration: InputDecoration(
                       labelText: 'Старый пароль',
-                      border: OutlineInputBorder(),
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(16),
+                      ),
+                      filled: true,
+                      fillColor: Theme.of(
+                        context,
+                      ).colorScheme.surface.withOpacity(0.1),
                     ),
                   ),
                 ] else ...[
                   TextField(
                     controller: newPassController,
                     obscureText: true,
-                    decoration: const InputDecoration(
+                    decoration: InputDecoration(
                       labelText: 'Новый пароль',
-                      border: OutlineInputBorder(),
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(16),
+                      ),
+                      filled: true,
+                      fillColor: Theme.of(
+                        context,
+                      ).colorScheme.surface.withOpacity(0.1),
                     ),
                   ),
                   const SizedBox(height: 12),
                   TextField(
                     controller: confirmPassController,
                     obscureText: true,
-                    decoration: const InputDecoration(
-                      labelText: 'Подтвердите новый пароль',
-                      border: OutlineInputBorder(),
+                    decoration: InputDecoration(
+                      labelText: 'Подтвердите пароль',
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(16),
+                      ),
+                      filled: true,
+                      fillColor: Theme.of(
+                        context,
+                      ).colorScheme.surface.withOpacity(0.1),
                     ),
                   ),
                 ],
@@ -111,13 +173,15 @@ class _ProfileTabState extends State<ProfileTab> {
             ),
           ),
           actions: [
-            TextButton(onPressed: () => Navigator.pop(context), child: const Text('Отмена')),
             TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: const Text('Отмена'),
+            ),
+            ElevatedButton(
               onPressed: _isLoading
                   ? null
                   : () async {
                       if (!oldPasswordCorrect) {
-                        // Проверяем старый пароль
                         try {
                           await auth.signInWithPassword(
                             email: widget.profile.mail,
@@ -126,34 +190,50 @@ class _ProfileTabState extends State<ProfileTab> {
                           setDialogState(() => oldPasswordCorrect = true);
                         } catch (e) {
                           ScaffoldMessenger.of(context).showSnackBar(
-                            const SnackBar(content: Text('Старый пароль неверный'), backgroundColor: Colors.red),
+                            SnackBar(
+                              content: const Text('Старый пароль неверный'),
+                              backgroundColor: Theme.of(
+                                context,
+                              ).colorScheme.error,
+                            ),
                           );
                         }
                       } else {
-                        // Меняем пароль
-                        if (newPassController.text != confirmPassController.text) {
+                        if (newPassController.text !=
+                            confirmPassController.text) {
                           ScaffoldMessenger.of(context).showSnackBar(
-                            const SnackBar(content: Text('Пароли не совпадают'), backgroundColor: Colors.red),
+                            const SnackBar(
+                              content: Text('Пароли не совпадают'),
+                            ),
                           );
                           return;
                         }
                         if (newPassController.text.length < 8) {
                           ScaffoldMessenger.of(context).showSnackBar(
-                            const SnackBar(content: Text('Новый пароль должен быть не менее 8 символов'), backgroundColor: Colors.red),
+                            const SnackBar(
+                              content: Text(
+                                'Пароль должен быть не менее 8 символов',
+                              ),
+                            ),
                           );
                           return;
                         }
 
                         try {
-                          await auth.updateUser(UserAttributes(password: newPassController.text));
+                          await auth.updateUser(
+                            UserAttributes(password: newPassController.text),
+                          );
                           Navigator.pop(context);
                           ScaffoldMessenger.of(context).showSnackBar(
-                            const SnackBar(content: Text('Пароль успешно изменён!'), backgroundColor: Colors.green),
+                            SnackBar(
+                              content: const Text('Пароль успешно изменён!'),
+                              backgroundColor: AppColors.success,
+                            ),
                           );
                         } catch (e) {
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            SnackBar(content: Text('Ошибка смены пароля: $e'), backgroundColor: Colors.red),
-                          );
+                          ScaffoldMessenger.of(
+                            context,
+                          ).showSnackBar(SnackBar(content: Text('Ошибка: $e')));
                         }
                       }
                     },
@@ -169,15 +249,18 @@ class _ProfileTabState extends State<ProfileTab> {
     confirmPassController.dispose();
   }
 
-  // Выход из аккаунта
   Future<void> _logout() async {
     final confirm = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
         title: const Text('Выход'),
         content: const Text('Выйти из аккаунта?'),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(context, false), child: const Text('Отмена')),
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text('Отмена'),
+          ),
           TextButton(
             onPressed: () => Navigator.pop(context, true),
             child: const Text('Выйти', style: TextStyle(color: Colors.red)),
@@ -190,7 +273,11 @@ class _ProfileTabState extends State<ProfileTab> {
       await AuthService().signOut();
       if (mounted) {
         Navigator.of(context).pushAndRemoveUntil(
-          MaterialPageRoute(builder: (_) => const LoginScreen()),
+          PageRouteBuilder(
+            pageBuilder: (_, __, ___) => const LoginScreen(),
+            transitionsBuilder: (_, animation, __, child) =>
+                FadeTransition(opacity: animation, child: child),
+          ),
           (route) => false,
         );
       }
@@ -200,117 +287,224 @@ class _ProfileTabState extends State<ProfileTab> {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
+    final backgroundColor = isDark ? Colors.grey[900] : Colors.blue[50];
 
-    return SingleChildScrollView(
-      padding: const EdgeInsets.all(24),
-      child: Column(
-        children: [
-          // Аватар
-          CircleAvatar(
-            radius: 70,
-            backgroundColor: theme.primaryColor.withOpacity(0.2),
-            child: Text(
-              _usernameController.text.isEmpty
-                  ? widget.profile.mail[0].toUpperCase()
-                  : _usernameController.text[0].toUpperCase(),
-              style: TextStyle(fontSize: 60, color: theme.primaryColor, fontWeight: FontWeight.bold),
-            ),
-          ),
+    return Scaffold(
+      backgroundColor: backgroundColor,
+      body: SafeArea(
+        child: FadeTransition(
+          opacity: _fadeAnimation,
+          child: SlideTransition(
+            position: _slideAnimation,
+            child: SingleChildScrollView(
+              padding: const EdgeInsets.symmetric(
+                horizontal: 32.0,
+                vertical: 24.0,
+              ),
+              child: Column(
+                children: [
+                  // Аватар с анимацией
+                  Hero(
+                    tag: 'profile_avatar',
+                    child: CircleAvatar(
+                      radius: 80,
+                      backgroundColor: theme.colorScheme.primary.withOpacity(
+                        0.2,
+                      ),
+                      child: Text(
+                        _usernameController.text.isEmpty
+                            ? widget.profile.mail[0].toUpperCase()
+                            : _usernameController.text[0].toUpperCase(),
+                        style: TextStyle(
+                          fontSize: 80,
+                          fontWeight: FontWeight.bold,
+                          color: theme.colorScheme.primary,
+                        ),
+                      ),
+                    ),
+                  ),
 
-          const SizedBox(height: 32),
+                  const SizedBox(height: 40),
 
-          // Редактируемое имя
-          Card(
-            elevation: 4,
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-            child: ListTile(
-              leading: const Icon(Icons.person_outline),
-              title: _isEditingUsername
-                  ? TextField(
-                      controller: _usernameController,
-                      autofocus: true,
-                      decoration: const InputDecoration(border: InputBorder.none, hintText: 'Введите имя'),
-                    )
-                  : Text(_usernameController.text.isEmpty ? 'Имя не указано' : _usernameController.text),
-              trailing: IconButton(
-                icon: Icon(_isEditingUsername ? Icons.check : Icons.edit_outlined),
-                onPressed: _isLoading
-                    ? null
-                    : () {
-                        if (_isEditingUsername) {
-                          _saveUsername();
-                        } else {
-                          setState(() => _isEditingUsername = true);
-                        }
-                      },
+                  // Карточка с именем
+                  Card(
+                    elevation: 8,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(20),
+                    ),
+                    color: theme.cardColor,
+                    child: ListTile(
+                      leading: Icon(
+                        Icons.person_outline,
+                        color: theme.colorScheme.primary,
+                        size: 32,
+                      ),
+                      title: _isEditingUsername
+                          ? TextField(
+                              controller: _usernameController,
+                              autofocus: true,
+                              style: const TextStyle(fontSize: 18),
+                              decoration: InputDecoration(
+                                border: InputBorder.none,
+                                hintText: 'Введите имя',
+                                hintStyle: TextStyle(
+                                  color: theme.textTheme.bodyMedium?.color,
+                                ),
+                              ),
+                            )
+                          : Text(
+                              _usernameController.text.isEmpty
+                                  ? 'Имя не указано'
+                                  : _usernameController.text,
+                              style: const TextStyle(
+                                fontSize: 20,
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                      trailing: AnimatedSwitcher(
+                        duration: const Duration(milliseconds: 300),
+                        child: IconButton(
+                          key: ValueKey(_isEditingUsername),
+                          icon: Icon(
+                            _isEditingUsername
+                                ? Icons.check_circle
+                                : Icons.edit_outlined,
+                            color: theme.colorScheme.primary,
+                            size: 28,
+                          ),
+                          onPressed: _isLoading
+                              ? null
+                              : () {
+                                  if (_isEditingUsername) {
+                                    _saveUsername();
+                                  } else {
+                                    setState(() => _isEditingUsername = true);
+                                  }
+                                },
+                        ),
+                      ),
+                    ),
+                  ),
+
+                  const SizedBox(height: 20),
+
+                  // Email
+                  Card(
+                    elevation: 6,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(20),
+                    ),
+                    color: theme.cardColor,
+                    child: ListTile(
+                      leading: Icon(
+                        Icons.email_outlined,
+                        color: theme.colorScheme.primary,
+                        size: 32,
+                      ),
+                      title: const Text(
+                        'Email',
+                        style: TextStyle(fontWeight: FontWeight.w600),
+                      ),
+                      subtitle: Text(
+                        widget.profile.mail,
+                        style: const TextStyle(fontSize: 16),
+                      ),
+                    ),
+                  ),
+
+                  const SizedBox(height: 20),
+
+                  // Роль
+                  Card(
+                    elevation: 6,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(20),
+                    ),
+                    color: theme.cardColor,
+                    child: ListTile(
+                      leading: Icon(
+                        Icons.badge_outlined,
+                        color: theme.colorScheme.primary,
+                        size: 32,
+                      ),
+                      title: const Text(
+                        'Роль',
+                        style: TextStyle(fontWeight: FontWeight.w600),
+                      ),
+                      subtitle: Text(
+                        "пользователь зала".toUpperCase(),
+                        style: TextStyle(
+                          fontSize: 18,
+                          fontWeight: FontWeight.bold,
+                          color: theme.colorScheme.primary,
+                        ),
+                      ),
+                    ),
+                  ),
+
+                  const SizedBox(height: 40),
+
+                  // Смена пароля
+                  SizedBox(
+                    width: double.infinity,
+                    child: OutlinedButton.icon(
+                      onPressed: _changePassword,
+                      icon: const Icon(Icons.lock_reset_outlined, size: 28),
+                      label: const Text(
+                        'Сменить пароль',
+                        style: TextStyle(fontSize: 18),
+                      ),
+                      style: OutlinedButton.styleFrom(
+                        padding: const EdgeInsets.symmetric(vertical: 18),
+                        side: BorderSide(
+                          color: theme.colorScheme.primary,
+                          width: 2,
+                        ),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(20),
+                        ),
+                        foregroundColor: theme.colorScheme.primary,
+                      ),
+                    ),
+                  ),
+
+                  const SizedBox(height: 20),
+
+                  // Выход
+                  SizedBox(
+                    width: double.infinity,
+                    child: ElevatedButton.icon(
+                      onPressed: _logout,
+                      icon: const Icon(Icons.logout, size: 28),
+                      label: const Text(
+                        'Выйти из аккаунта',
+                        style: TextStyle(fontSize: 18),
+                      ),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: Colors.red,
+                        foregroundColor: Colors.white,
+                        padding: const EdgeInsets.symmetric(vertical: 18),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(20),
+                        ),
+                        elevation: 6,
+                      ),
+                    ),
+                  ),
+
+                  if (_isLoading)
+                    Padding(
+                      padding: const EdgeInsets.only(top: 30),
+                      child: CircularProgressIndicator(
+                        color: theme.colorScheme.primary,
+                      ),
+                    ),
+                ],
               ),
             ),
           ),
-
-          const SizedBox(height: 16),
-
-          // Почта
-          Card(
-            elevation: 4,
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-            child: ListTile(
-              leading: const Icon(Icons.email_outlined),
-              title: const Text('Email'),
-              subtitle: Text(widget.profile.mail),
-            ),
-          ),
-
-          const SizedBox(height: 16),
-
-          // Роль
-          Card(
-            elevation: 4,
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-            child: ListTile(
-              leading: const Icon(Icons.badge_outlined),
-              title: const Text('Роль'),
-              subtitle: Text(widget.profile.role.toUpperCase()),
-            ),
-          ),
-
-          const SizedBox(height: 32),
-
-          // Кнопка смены пароля
-          SizedBox(
-            width: double.infinity,
-            child: OutlinedButton.icon(
-              onPressed: _changePassword,
-              icon: const Icon(Icons.lock_outline),
-              label: const Text('Сменить пароль'),
-              style: OutlinedButton.styleFrom(
-                padding: const EdgeInsets.symmetric(vertical: 16),
-                side: BorderSide(color: theme.primaryColor),
-              ),
-            ),
-          ),
-
-          const SizedBox(height: 16),
-
-          // Кнопка выхода
-          SizedBox(
-            width: double.infinity,
-            child: ElevatedButton.icon(
-              onPressed: _logout,
-              icon: const Icon(Icons.logout),
-              label: const Text('Выйти из аккаунта'),
-              style: ElevatedButton.styleFrom(
-                backgroundColor: Colors.red,
-                foregroundColor: Colors.white,
-                padding: const EdgeInsets.symmetric(vertical: 16),
-              ),
-            ),
-          ),
-
-          if (_isLoading) const Padding(
-            padding: EdgeInsets.only(top: 20),
-            child: CircularProgressIndicator(),
-          ),
-        ],
+        ),
       ),
     );
   }
