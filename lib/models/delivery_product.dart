@@ -1,5 +1,3 @@
-// Добавь в lib/models/product.dart
-
 import 'package:d_and_f_final/models/product.dart';
 
 class DeliveryProduct {

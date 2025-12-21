@@ -1,5 +1,3 @@
-// lib/screens/auth/role_select_screen.dart
-
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import '../../models/role_model.dart';
@@ -32,7 +30,6 @@ final List<RoleItem> _roleItems = [
     Icons.inventory_2_outlined,
     'Приёмка поставок и учёт остатков',
   ),
-  // const RoleItem(AppRole.admin, 'Администратор', Icons.admin_panel_settings_outlined, 'Полный доступ к системе'),
 ];
 
 class RoleSelectScreen extends StatefulWidget {
@@ -143,12 +140,11 @@ class _RoleSelectScreenState extends State<RoleSelectScreen>
                         ),
                         const SizedBox(height: 40),
 
-                        // Замени GridView.builder на этот Wrap
                         Wrap(
-                          spacing: 20, // горизонтальный отступ между элементами
-                          runSpacing: 20, // вертикальный отступ между строками
+                          spacing: 20, 
+                          runSpacing: 20, 
                           alignment: WrapAlignment
-                              .center, // ← КЛЮЧ: центрирует всё по центру!
+                              .center, 
                           children: _roleItems.map((item) {
                             final isSelected = _selectedRole == item.role;
 
@@ -158,8 +154,8 @@ class _RoleSelectScreenState extends State<RoleSelectScreen>
                                 duration: const Duration(milliseconds: 300),
                                 curve: Curves.easeInOut,
                                 width:
-                                    140, // фиксированная ширина для равномерности
-                                height: 140, // квадратные карточки
+                                    140, 
+                                height: 140, 
                                 decoration: BoxDecoration(
                                   color: isSelected
                                       ? theme.colorScheme.primary
@@ -226,7 +222,6 @@ class _RoleSelectScreenState extends State<RoleSelectScreen>
 
                         const SizedBox(height: 40),
 
-                        // Кнопка подтверждения
                         SizedBox(
                           width: double.infinity,
                           child: ElevatedButton(

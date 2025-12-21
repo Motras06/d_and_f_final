@@ -1,5 +1,3 @@
-// lib/screens/tabs/supplier/widgets/product_form_dialog.dart
-
 import 'dart:io';
 
 import 'package:d_and_f_final/models/product.dart';
@@ -100,7 +98,7 @@ class _ProductFormDialogState extends State<ProductFormDialog> with SingleTicker
       await widget.productService.deleteProduct(widget.existingProduct!.id);
 
       if (mounted) {
-        Navigator.pop(context, true); // возвращаем true — товар удалён
+        Navigator.pop(context, true); 
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
             content: Text('Товар удалён'),
@@ -147,7 +145,6 @@ class _ProductFormDialogState extends State<ProductFormDialog> with SingleTicker
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
-                // Фото товара
                 GestureDetector(
                   onTap: () async {
                     final image = await _picker.pickImage(source: ImageSource.gallery);
@@ -196,7 +193,6 @@ class _ProductFormDialogState extends State<ProductFormDialog> with SingleTicker
                 ),
                 const SizedBox(height: 32),
 
-                // Поля ввода
                 TextField(
                   controller: nameController,
                   decoration: InputDecoration(

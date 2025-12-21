@@ -1,9 +1,6 @@
-// lib/app_colors.dart
-
 import 'package:flutter/material.dart';
 
 class AppColors {
-  // Основные цвета (общие для обеих тем)
   static const Color primary = Color(0xFF0D47A1);
   static const Color primaryLight = Color(0xFF1976D2);
   static const Color accent = Color(0xFF42A5F5);
@@ -11,7 +8,6 @@ class AppColors {
   static const Color error = Color(0xFFD32F2F);
   static const Color success = Color(0xFF388E3C);
 
-  // Светлая тема
   static final light = ThemeData(
     useMaterial3: true,
     colorScheme: const ColorScheme.light(
@@ -35,7 +31,6 @@ class AppColors {
     dividerColor: Colors.grey[300],
   );
 
-  // Тёмная тема
   static final dark = ThemeData(
     useMaterial3: true,
     colorScheme: const ColorScheme.dark(

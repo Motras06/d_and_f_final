@@ -1,5 +1,3 @@
-// lib/screens/auth/login_screen.dart
-
 import 'package:flutter/material.dart';
 import 'package:d_and_f_final/screens/auth/signup_screen.dart';
 
@@ -26,7 +24,7 @@ class _LoginScreenState extends State<LoginScreen>
   final _authService = AuthService();
 
   bool _loading = false;
-  bool _obscurePassword = true; // ← состояние видимости пароля
+  bool _obscurePassword = true; 
 
   late AnimationController _animationController;
   late Animation<double> _fadeAnimation;
@@ -90,7 +88,6 @@ class _LoginScreenState extends State<LoginScreen>
       password: _passwordController.text,
     );
 
-    // ← ВАЖНО: проверяем mounted перед любым setState или ScaffoldMessenger
     if (!mounted) return;
 
     setState(() => _loading = false);
@@ -107,7 +104,6 @@ class _LoginScreenState extends State<LoginScreen>
 
     final profile = await _authService.getProfile();
 
-    // ← Снова проверяем mounted — профиль мог загрузиться долго
     if (!mounted) return;
 
     if (profile != null) {
@@ -229,11 +225,11 @@ class _LoginScreenState extends State<LoginScreen>
                           TextFormField(
                             controller: _passwordController,
                             obscureText: _obscurePassword,
-                            maxLength: 12, // ← ЛИМИТ: максимум 12 символов
+                            maxLength: 12,
                             decoration: InputDecoration(
                               labelText: 'Пароль',
                               counterText:
-                                  '', // ← скрываем счётчик символов (по желанию)
+                                  '', 
                               prefixIcon: Icon(
                                 Icons.vpn_key_outlined,
                                 color: theme.colorScheme.primary,

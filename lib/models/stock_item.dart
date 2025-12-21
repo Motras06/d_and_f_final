@@ -1,4 +1,3 @@
-
 class StockItem {
   final int productId;
   final String name;

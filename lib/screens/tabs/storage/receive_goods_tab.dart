@@ -1,5 +1,3 @@
-// lib/screens/tabs/storage/receive_goods_tab.dart
-
 import 'package:flutter/material.dart';
 import 'package:d_and_f_final/models/profile.dart';
 import '/services/delivery_service.dart';
@@ -227,7 +225,6 @@ class _ReceiveGoodsTabState extends State<ReceiveGoodsTab>
                     )
                   : Column(
                       children: [
-                        // Заголовок с магазином
                         Padding(
                           padding: const EdgeInsets.all(20.0),
                           child: Card(
@@ -258,8 +255,6 @@ class _ReceiveGoodsTabState extends State<ReceiveGoodsTab>
                             ),
                           ),
                         ),
-
-                        // Список поставок
                         Expanded(
                           child: ListView.builder(
                             padding: const EdgeInsets.symmetric(horizontal: 16),
@@ -294,7 +289,6 @@ class _ReceiveGoodsTabState extends State<ReceiveGoodsTab>
                                           padding: const EdgeInsets.all(20.0),
                                           child: Row(
                                             children: [
-                                              // Иконка поставки
                                               Container(
                                                 padding: const EdgeInsets.all(
                                                   16,
@@ -313,7 +307,6 @@ class _ReceiveGoodsTabState extends State<ReceiveGoodsTab>
                                               ),
                                               const SizedBox(width: 20),
 
-                                              // Информация
                                               Expanded(
                                                 child: Column(
                                                   crossAxisAlignment:
@@ -346,7 +339,6 @@ class _ReceiveGoodsTabState extends State<ReceiveGoodsTab>
                                                 ),
                                               ),
 
-                                              // Кнопки действий
                                               Column(
                                                 children: [
                                                   IconButton(

@@ -1,5 +1,3 @@
-// lib/screens/common/profile_tab.dart
-
 import 'package:d_and_f_final/screens/settings/app_colors.dart';
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
@@ -258,7 +256,6 @@ class _ProfileTabState extends State<ProfileTab> with SingleTickerProviderStateM
               padding: const EdgeInsets.symmetric(horizontal: 32.0, vertical: 24.0),
               child: Column(
                 children: [
-                  // Аватар с анимацией
                   Hero(
                     tag: 'profile_avatar',
                     child: CircleAvatar(
@@ -279,7 +276,6 @@ class _ProfileTabState extends State<ProfileTab> with SingleTickerProviderStateM
 
                   const SizedBox(height: 40),
 
-                  // Карточка с именем
                   Card(
                     elevation: 8,
                     shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
@@ -326,7 +322,6 @@ class _ProfileTabState extends State<ProfileTab> with SingleTickerProviderStateM
 
                   const SizedBox(height: 20),
 
-                  // Email
                   Card(
                     elevation: 6,
                     shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
@@ -340,7 +335,6 @@ class _ProfileTabState extends State<ProfileTab> with SingleTickerProviderStateM
 
                   const SizedBox(height: 20),
 
-                  // Роль
                   Card(
                     elevation: 6,
                     shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
@@ -357,7 +351,6 @@ class _ProfileTabState extends State<ProfileTab> with SingleTickerProviderStateM
 
                   const SizedBox(height: 40),
 
-                  // Смена пароля
                   SizedBox(
                     width: double.infinity,
                     child: OutlinedButton.icon(
@@ -375,7 +368,6 @@ class _ProfileTabState extends State<ProfileTab> with SingleTickerProviderStateM
 
                   const SizedBox(height: 20),
 
-                  // Выход
                   SizedBox(
                     width: double.infinity,
                     child: ElevatedButton.icon(

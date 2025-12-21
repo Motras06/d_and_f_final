@@ -1,5 +1,3 @@
-// lib/screens/tabs/supplier/supplier_home.dart
-
 import 'package:flutter/material.dart';
 import 'package:d_and_f_final/models/profile.dart';
 
@@ -45,7 +43,7 @@ class _SupplierHomeState extends State<SupplierHome> with SingleTickerProviderSt
   }
 
   void _onItemTapped(int index) {
-    if (_selectedIndex == index) return; // не анимируем, если уже на этом табе
+    if (_selectedIndex == index) return; 
 
     setState(() {
       _selectedIndex = index;
@@ -90,7 +88,6 @@ class _SupplierHomeState extends State<SupplierHome> with SingleTickerProviderSt
       ),
       body: Stack(
         children: [
-          // Фон с градиентом (для красоты)
           Container(
             decoration: BoxDecoration(
               gradient: LinearGradient(
@@ -103,13 +100,12 @@ class _SupplierHomeState extends State<SupplierHome> with SingleTickerProviderSt
             ),
           ),
 
-          // Контент таба с анимацией
           AnimatedSwitcher(
             duration: const Duration(milliseconds: 400),
             transitionBuilder: (child, animation) => FadeTransition(opacity: animation, child: child),
             child: Padding(
               key: ValueKey<int>(_selectedIndex),
-              padding: const EdgeInsets.only(top: 5.0), // отступ под AppBar
+              padding: const EdgeInsets.only(top: 5.0), 
               child: _pages[_selectedIndex],
             ),
           ),

@@ -1,5 +1,3 @@
-// lib/screens/tabs/supplier/widgets/delivery_product_card.dart
-
 import 'package:flutter/material.dart';
 import 'package:d_and_f_final/models/product.dart';
 
@@ -97,7 +95,6 @@ class _DeliveryProductCardState extends State<DeliveryProductCard> with SingleTi
                   padding: const EdgeInsets.all(16.0),
                   child: Row(
                     children: [
-                      // Фото товара
                       Hero(
                         tag: 'delivery_product_image_${widget.product.id}',
                         child: Container(
@@ -135,7 +132,6 @@ class _DeliveryProductCardState extends State<DeliveryProductCard> with SingleTi
                       ),
                       const SizedBox(width: 20),
 
-                      // Информация
                       Expanded(
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
@@ -170,7 +166,6 @@ class _DeliveryProductCardState extends State<DeliveryProductCard> with SingleTi
                         ),
                       ),
 
-                      // Количество с кнопками +/-
                       Row(
                         mainAxisSize: MainAxisSize.min,
                         children: [

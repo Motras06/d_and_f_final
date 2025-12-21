@@ -1,5 +1,3 @@
-// lib/screens/tabs/supplier/new_delivery_tab.dart
-
 import 'dart:async';
 
 import 'package:flutter/material.dart';
@@ -41,7 +39,6 @@ class _NewDeliveryTabState extends State<NewDeliveryTab> with SingleTickerProvid
     super.initState();
     _loadData();
 
-    // Только debounce — без setState в listener
     _searchController.addListener(_onSearchChanged);
 
     _animationController = AnimationController(
@@ -65,7 +62,7 @@ class _NewDeliveryTabState extends State<NewDeliveryTab> with SingleTickerProvid
     _debounceTimer = Timer(const Duration(milliseconds: 1000), () {
       if (!mounted) return;
       final newQuery = _searchController.text.trim();
-      if (newQuery == _searchQuery) return; // не обновляем, если ничего не изменилось
+      if (newQuery == _searchQuery) return; 
 
       setState(() {
         _searchQuery = newQuery;
@@ -130,7 +127,6 @@ class _NewDeliveryTabState extends State<NewDeliveryTab> with SingleTickerProvid
           .where((p) => p.name.toLowerCase().contains(query))
           .toList();
     }
-    // НЕ вызываем setState здесь — только в debounce или других местах
   }
 
   void _selectStore() async {
@@ -189,7 +185,7 @@ class _NewDeliveryTabState extends State<NewDeliveryTab> with SingleTickerProvid
     } else {
       _selectedQuantities[productId] = newQuantity;
     }
-    setState(() {}); // ← обновляем только здесь (для кнопки "Создать поставку")
+    setState(() {}); 
   }
 
   Future<void> _submitDelivery() async {
@@ -285,7 +281,6 @@ class _NewDeliveryTabState extends State<NewDeliveryTab> with SingleTickerProvid
 
                 return Column(
                   children: [
-                    // Поиск
                     Padding(
                       padding: const EdgeInsets.all(16.0),
                       child: SearchBar(
@@ -315,8 +310,6 @@ class _NewDeliveryTabState extends State<NewDeliveryTab> with SingleTickerProvid
                         hintStyle: WidgetStatePropertyAll(TextStyle(color: theme.colorScheme.onSurface.withOpacity(0.6))),
                       ),
                     ),
-
-                    // Выбор магазина
                     Padding(
                       padding: const EdgeInsets.symmetric(horizontal: 16.0),
                       child: OutlinedButton.icon(
@@ -336,7 +329,6 @@ class _NewDeliveryTabState extends State<NewDeliveryTab> with SingleTickerProvid
                     ),
                     const SizedBox(height: 20),
 
-                    // Список товаров
                     Expanded(
                       child: _filteredProducts.isEmpty
                           ? Center(
@@ -381,7 +373,6 @@ class _NewDeliveryTabState extends State<NewDeliveryTab> with SingleTickerProvid
                             ),
                     ),
 
-                    // Кнопка создания поставки
                     if (_selectedStore != null && _selectedQuantities.isNotEmpty)
                       Padding(
                         padding: const EdgeInsets.all(16.0),

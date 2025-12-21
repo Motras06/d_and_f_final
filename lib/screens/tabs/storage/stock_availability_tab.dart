@@ -1,5 +1,3 @@
-// lib/screens/tabs/storage/stock_availability_tab.dart
-
 import 'package:d_and_f_final/models/stock_item.dart';
 import 'package:flutter/material.dart';
 import 'package:d_and_f_final/models/profile.dart';
@@ -156,7 +154,7 @@ class _StockAvailabilityTabState extends State<StockAvailabilityTab>
       builder: (context) => StockItemDialog(
         item: item,
         onUpdate: (newQty) =>
-            updateQuantity(item.productId, newQty), // ← правильно
+            updateQuantity(item.productId, newQty), 
         onDelete: () => deleteProduct(item.productId),
       ),
     );

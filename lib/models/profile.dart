@@ -1,8 +1,8 @@
 class Profile {
-  final String id;          // uuid из auth.users
-  final String mail;        // email пользователя
-  final String? username;   // может быть null
-  final String role;        // 'supplier', 'hall', 'storage', 'admin' и т.д.
+  final String id;         
+  final String mail;        
+  final String? username;   
+  final String role;        
   final DateTime createdAt;
 
   Profile({

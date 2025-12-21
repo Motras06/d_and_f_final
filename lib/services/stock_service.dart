@@ -1,5 +1,3 @@
-// lib/services/stock_service.dart
-
 import 'package:d_and_f_final/models/stock_item.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:d_and_f_final/models/profile.dart';
@@ -8,7 +6,6 @@ class StockService {
   final supabase = Supabase.instance.client;
 
   Future<Map<String, dynamic>> loadStock(Profile profile) async {
-    // 1. Получаем магазин кладовщика
     final assignment = await supabase
         .from('store_assignments')
         .select('store_name')
@@ -21,7 +18,6 @@ class StockService {
 
     final storeName = assignment['store_name'] as String;
 
-    // 2. Получаем остатки
     final stockResponse = await supabase
         .from('store_stock')
         .select('product_id, quantity, product:product_id(name, country, price, image_url, about)')

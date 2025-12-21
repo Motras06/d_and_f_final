@@ -1,5 +1,3 @@
-// lib/services/delivery_service.dart
-
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:d_and_f_final/models/profile.dart';
 
@@ -7,7 +5,6 @@ class DeliveryService {
   final supabase = Supabase.instance.client;
 
   Future<Map<String, dynamic>> loadPendingDeliveries(Profile profile) async {
-    // 1. Находим магазин кладовщика
     final assignment = await supabase
         .from('store_assignments')
         .select('store_name')
@@ -21,7 +18,6 @@ class DeliveryService {
 
     final storeName = assignment['store_name'] as String;
 
-    // 2. Находим ожидающие поставки
     final deliveries = await supabase
         .from('deliveries')
         .select('id, supplier_id, created_at')
@@ -111,7 +107,6 @@ class DeliveryService {
         .from('deliveries')
         .update({'status': 'rejected'})
         .eq('id', deliveryId);
-    // Или если хочешь полностью удалить:
     await supabase
         .from('delivery_items')
         .delete()
@@ -122,13 +117,11 @@ class DeliveryService {
   Future<void> deleteDelivery(int deliveryId) async {
     final supabase = Supabase.instance.client;
 
-    // 1. Сначала удаляем все товары поставки
     await supabase
         .from('delivery_items')
         .delete()
         .eq('delivery_id', deliveryId);
 
-    // 2. Потом удаляем саму поставку
     await supabase.from('deliveries').delete().eq('id', deliveryId);
   }
 }

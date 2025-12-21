@@ -1,5 +1,3 @@
-// lib/screens/tabs/supplier/widgets/product_card.dart
-
 import 'package:flutter/material.dart';
 import 'package:d_and_f_final/models/product.dart';
 
@@ -16,7 +14,7 @@ class ProductCard extends StatefulWidget {
 class _ProductCardState extends State<ProductCard> with SingleTickerProviderStateMixin {
   late AnimationController _animationController;
   late Animation<double> _scaleAnimation;
-  bool _isHovered = false; // для hover-эффекта на web/desktop
+  bool _isHovered = false; 
 
   @override
   void initState() {
@@ -30,7 +28,6 @@ class _ProductCardState extends State<ProductCard> with SingleTickerProviderStat
       CurvedAnimation(parent: _animationController, curve: Curves.easeOutCubic),
     );
 
-    // Запускаем анимацию при появлении карточки
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _animationController.forward();
     });
@@ -84,7 +81,6 @@ class _ProductCardState extends State<ProductCard> with SingleTickerProviderStat
                   padding: const EdgeInsets.all(16.0),
                   child: Row(
                     children: [
-                      // Фото товара
                       Hero(
                         tag: 'product_image_${widget.product.id}',
                         child: Container(
@@ -122,7 +118,6 @@ class _ProductCardState extends State<ProductCard> with SingleTickerProviderStat
                       ),
                       const SizedBox(width: 20),
 
-                      // Информация
                       Expanded(
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
@@ -162,7 +157,6 @@ class _ProductCardState extends State<ProductCard> with SingleTickerProviderStat
                         ),
                       ),
 
-                      // Кнопка редактирования
                       IconButton(
                         onPressed: widget.onEdit,
                         icon: const Icon(Icons.edit_outlined),

@@ -1,5 +1,3 @@
-// lib/screens/tabs/storage/storage_home.dart
-
 import 'package:flutter/material.dart';
 import 'package:d_and_f_final/models/profile.dart';
 
@@ -89,7 +87,6 @@ class _StorageHomeState extends State<StorageHome> with SingleTickerProviderStat
       ),
       body: Stack(
         children: [
-          // Фон с градиентом
           Container(
             decoration: BoxDecoration(
               gradient: LinearGradient(
@@ -101,8 +98,6 @@ class _StorageHomeState extends State<StorageHome> with SingleTickerProviderStat
               ),
             ),
           ),
-
-          // Контент таба с анимацией
           AnimatedSwitcher(
             duration: const Duration(milliseconds: 400),
             transitionBuilder: (child, animation) => FadeTransition(opacity: animation, child: child),

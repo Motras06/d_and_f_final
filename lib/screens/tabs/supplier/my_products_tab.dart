@@ -1,5 +1,3 @@
-// lib/screens/tabs/supplier/my_products_tab.dart
-
 import 'package:flutter/material.dart';
 import 'package:d_and_f_final/models/product.dart';
 import 'package:d_and_f_final/models/profile.dart';
@@ -94,7 +92,7 @@ class _MyProductsTabState extends State<MyProductsTab> with AutomaticKeepAliveCl
 
   @override
   Widget build(BuildContext context) {
-    super.build(context); // для keepAlive
+    super.build(context); 
 
     final theme = Theme.of(context);
 
@@ -106,7 +104,6 @@ class _MyProductsTabState extends State<MyProductsTab> with AutomaticKeepAliveCl
           child: _buildBody(theme),
         ),
 
-        // ← Только это добавлено: кнопка + в правом нижнем углу
         Positioned(
           bottom: 20,
           right: 20,

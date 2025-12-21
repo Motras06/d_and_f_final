@@ -1,5 +1,3 @@
-// lib/screens/tabs/admin/admin_home.dart
-
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:d_and_f_final/models/profile.dart';
@@ -70,7 +68,6 @@ class _AdminHomeState extends State<AdminHome>
 
     return Scaffold(
       backgroundColor: backgroundColor,
-      extendBodyBehindAppBar: true,
       appBar: AppBar(
         title: const Text('D&F'),
         backgroundColor: theme.appBarTheme.backgroundColor?.withOpacity(0.9),
@@ -102,7 +99,6 @@ class _AdminHomeState extends State<AdminHome>
       ),
       body: Stack(
         children: [
-          // Градиентный фон
           Container(
             decoration: BoxDecoration(
               gradient: LinearGradient(
@@ -117,8 +113,6 @@ class _AdminHomeState extends State<AdminHome>
               ),
             ),
           ),
-
-          // Контент табов с анимацией
           TabBarView(
             controller: _tabController,
             children: [
@@ -135,7 +129,6 @@ class _AdminHomeState extends State<AdminHome>
   }
 }
 
-// 1. Вкладка Пользователи — премиум дизайн
 class UsersTab extends StatefulWidget {
   @override
   State<UsersTab> createState() => _UsersTabState();
@@ -373,7 +366,6 @@ class _UsersTabState extends State<UsersTab>
   }
 }
 
-// 2. Вкладка Магазины — премиум
 class StoresTab extends StatefulWidget {
   @override
   State<StoresTab> createState() => _StoresTabState();
@@ -502,7 +494,6 @@ class _StoresTabState extends State<StoresTab> {
   }
 }
 
-// 3. Вкладка Привязки — премиум
 class AssignmentsTab extends StatefulWidget {
   @override
   State<AssignmentsTab> createState() => _AssignmentsTabState();
@@ -640,7 +631,6 @@ class _AssignmentsTabState extends State<AssignmentsTab> {
   }
 }
 
-// 4. Вкладка Товары (админ) — премиум
 class ProductsAdminTab extends StatefulWidget {
   @override
   State<ProductsAdminTab> createState() => _ProductsAdminTabState();
@@ -718,7 +708,6 @@ class _ProductsAdminTabState extends State<ProductsAdminTab> {
   }
 }
 
-// 5. Вкладка Поставки (админ) — премиум
 class DeliveriesAdminTab extends StatefulWidget {
   @override
   State<DeliveriesAdminTab> createState() => _DeliveriesAdminTabState();

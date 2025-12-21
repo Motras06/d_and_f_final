@@ -1,5 +1,3 @@
-// lib/models/product.dart
-
 class Product {
   final int id;
   final String name;
@@ -8,7 +6,7 @@ class Product {
   final num price;
   final String? imageUrl;
   final DateTime? createdAt;
-  final String? createdBy; // uuid поставщика
+  final String? createdBy; 
 
   Product({
     required this.id,

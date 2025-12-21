@@ -1,5 +1,3 @@
-// lib/screens/tabs/storage/widgets/stock_item_dialog.dart
-
 import 'dart:convert';
 
 import 'package:flutter/material.dart';
@@ -35,7 +33,6 @@ class StockItemDialog extends StatelessWidget {
 
     final qrData = jsonEncode(safeProduct);
 
-    // QuickChart.io — стабильный и быстрый
     final qrUrl =
         'https://quickchart.io/qr?text=$qrData&size=300&margin=20&light=ffffff&dark=121212';
 
@@ -86,7 +83,6 @@ class StockItemDialog extends StatelessWidget {
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              // Фото товара
               if (item.imageUrl != null)
                 Center(
                   child: Hero(
@@ -116,7 +112,6 @@ class StockItemDialog extends StatelessWidget {
                 ),
               const SizedBox(height: 32),
 
-              // QR-код — супер пупер дизайн
               Center(
                 child: Container(
                   padding: const EdgeInsets.all(24),
@@ -170,7 +165,6 @@ class StockItemDialog extends StatelessWidget {
               ),
               const SizedBox(height: 32),
 
-              // Информация о товаре
               Container(
                 padding: const EdgeInsets.all(20),
                 decoration: BoxDecoration(
@@ -201,7 +195,6 @@ class StockItemDialog extends StatelessWidget {
               ),
               const SizedBox(height: 32),
 
-              // Редактирование количества — супер пупер
               Text(
                 'Изменить количество на складе',
                 style: theme.textTheme.titleMedium?.copyWith(

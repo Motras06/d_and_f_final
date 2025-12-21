@@ -1,5 +1,3 @@
-// lib/screens/tabs/hall/hall_home.dart
-
 import 'package:flutter/material.dart';
 import 'package:d_and_f_final/models/profile.dart';
 
@@ -89,7 +87,6 @@ class _HallHomeState extends State<HallHome> with SingleTickerProviderStateMixin
       ),
       body: Stack(
         children: [
-          // Фон с градиентом
           Container(
             decoration: BoxDecoration(
               gradient: LinearGradient(
@@ -102,7 +99,6 @@ class _HallHomeState extends State<HallHome> with SingleTickerProviderStateMixin
             ),
           ),
 
-          // Контент таба с анимацией
           AnimatedSwitcher(
             duration: const Duration(milliseconds: 400),
             transitionBuilder: (child, animation) => FadeTransition(opacity: animation, child: child),

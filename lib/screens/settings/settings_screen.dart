@@ -1,5 +1,3 @@
-// lib/screens/settings/settings_screen.dart
-
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:d_and_f_final/services/theme_service.dart';

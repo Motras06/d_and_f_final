@@ -1,5 +1,3 @@
-// lib/screens/auth/signup_screen.dart
-
 import 'package:flutter/material.dart';
 import 'package:d_and_f_final/screens/auth/role_select_screen.dart';
 
@@ -227,7 +225,6 @@ class _SignupScreenState extends State<SignupScreen> with SingleTickerProviderSt
                           ),
                           const SizedBox(height: 32.0),
 
-                          // Кнопка выбора роли
                           SizedBox(
                             width: double.infinity,
                             child: OutlinedButton.icon(
@@ -246,7 +243,6 @@ class _SignupScreenState extends State<SignupScreen> with SingleTickerProviderSt
                           ),
                           const SizedBox(height: 24.0),
 
-                          // Имя (необязательно)
                           TextFormField(
                             controller: _usernameController,
                             decoration: InputDecoration(
@@ -263,7 +259,6 @@ class _SignupScreenState extends State<SignupScreen> with SingleTickerProviderSt
                           ),
                           const SizedBox(height: 16.0),
 
-                          // Email
                           TextFormField(
                             controller: _emailController,
                             keyboardType: TextInputType.emailAddress,
@@ -282,7 +277,6 @@ class _SignupScreenState extends State<SignupScreen> with SingleTickerProviderSt
                           ),
                           const SizedBox(height: 16.0),
 
-                          // Пароль с глазком и лимитом
                           TextFormField(
                             controller: _passwordController,
                             obscureText: _obscurePassword,
@@ -314,7 +308,6 @@ class _SignupScreenState extends State<SignupScreen> with SingleTickerProviderSt
                           ),
                           const SizedBox(height: 32.0),
 
-                          // Кнопка регистрации
                           SizedBox(
                             width: double.infinity,
                             child: ElevatedButton(

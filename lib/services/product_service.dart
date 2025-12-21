@@ -6,7 +6,6 @@ class ProductService {
   final SupabaseClient _supabase = Supabase.instance.client;
   final String bucketName = 'image_s';
 
-  // Загрузка всех товаров поставщика
   Future<List<Product>> fetchMyProducts(String userId) async {
     final response = await _supabase
         .from('products')
@@ -19,7 +18,6 @@ class ProductService {
         .toList();
   }
 
-  // Создание товара
   Future<void> createProduct({
     required String name,
     required String country,
@@ -55,7 +53,6 @@ class ProductService {
     });
   }
 
-  // Обновление товара
   Future<void> updateProduct({
     required int productId,
     required String name,
@@ -100,13 +97,10 @@ class ProductService {
   Future<void> deleteProduct(int productId) async {
     final supabase = Supabase.instance.client;
 
-    // 1. Удаляем все записи в delivery_items с этим product_id
     await supabase.from('delivery_items').delete().eq('product_id', productId);
 
-    // 2. Удаляем все записи в store_stock с этим product_id
     await supabase.from('store_stock').delete().eq('product_id', productId);
 
-    // 3. Теперь можно удалить сам товар
     await supabase.from('products').delete().eq('id', productId);
   }
 }

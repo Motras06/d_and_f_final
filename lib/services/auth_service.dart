@@ -10,7 +10,6 @@ class AuthService {
 
   Stream<AuthState> get authStateStream => _supabase.auth.onAuthStateChange;
 
-  // Загрузка профиля
   Future<Profile?> getProfile() async {
     final user = currentUser;
     if (user == null) return null;
@@ -28,7 +27,6 @@ class AuthService {
     }
   }
 
-  // Вход
   Future<String?> signIn({
     required String email,
     required String password,
@@ -38,7 +36,7 @@ class AuthService {
         email: email,
         password: password,
       );
-      return null; // успех
+      return null; 
     } on AuthException catch (e) {
       return e.message;
     } catch (e) {
@@ -46,7 +44,6 @@ class AuthService {
     }
   }
 
-  // Регистрация + создание профиля с ролью
   Future<String?> signUp({
     required String email,
     required String password,
@@ -64,15 +61,14 @@ class AuthService {
         return 'Не удалось создать пользователя';
       }
 
-      // Создаём профиль в таблице profiles
       await _supabase.from('profiles').insert({
         'id': user.id,
         'mail': email,
         'username': username?.trim().isNotEmpty == true ? username!.trim() : null,
-        'role': appRoleToString(role), // 'supplier', 'hall', 'storage'
+        'role': appRoleToString(role),
       });
 
-      return null; // успех
+      return null; 
     } on AuthException catch (e) {
       return e.message;
     } catch (e) {
@@ -80,7 +76,6 @@ class AuthService {
     }
   }
 
-  // Выход
   Future<void> signOut() async {
     await _supabase.auth.signOut();
   }

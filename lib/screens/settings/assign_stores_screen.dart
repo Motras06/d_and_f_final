@@ -1,5 +1,3 @@
-// lib/screens/settings/assign_stores_screen.dart
-
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:d_and_f_final/models/profile.dart';
@@ -14,7 +12,7 @@ class AssignStoresScreen extends StatefulWidget {
 class _AssignStoresScreenState extends State<AssignStoresScreen> {
   List<Profile> _users = [];
   List<String> _allStores = [];
-  Map<String, List<String>> _userStores = {}; // user_id -> list of store_names
+  Map<String, List<String>> _userStores = {}; 
   bool _isLoading = true;
 
   @override
@@ -29,18 +27,15 @@ class _AssignStoresScreenState extends State<AssignStoresScreen> {
     try {
       final supabase = Supabase.instance.client;
 
-      // Все пользователи
       final usersResponse = await supabase.from('profiles').select('id, mail, username, role');
 
       final users = (usersResponse as List<dynamic>)
           .map((json) => Profile.fromJson(json as Map<String, dynamic>))
           .toList();
 
-      // Все магазины
       final storesResponse = await supabase.from('stores').select('name').order('name');
       final stores = (storesResponse as List<dynamic>).map((e) => e['name'] as String).toList();
 
-      // Все привязки
       final assignmentsResponse = await supabase.from('store_assignments').select('user_id, store_name');
       final Map<String, List<String>> assignments = {};
       for (final a in assignmentsResponse) {

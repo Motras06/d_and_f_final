@@ -1,5 +1,3 @@
-// lib/screens/tabs/hall/camera_tab.dart
-
 import 'dart:convert';
 
 import 'package:flutter/material.dart';
@@ -42,7 +40,6 @@ class _CameraTabState extends State<CameraTab>
       ),
     );
 
-    // Слушаем изменения состояния контроллера (ChangeNotifier)
     controller.addListener(_updateUI);
   }
 
@@ -175,7 +172,6 @@ class _CameraTabState extends State<CameraTab>
         ? Colors.black.withOpacity(0.7)
         : Colors.black.withOpacity(0.5);
 
-    // Текущее состояние фонарика из controller.value
     final torchState = controller.value.torchState;
     final torchEnabled = torchState == TorchState.on;
 
@@ -183,7 +179,6 @@ class _CameraTabState extends State<CameraTab>
       backgroundColor: Colors.black,
       body: Stack(
         children: [
-          // Камера
           MobileScanner(
             controller: controller,
             onDetect: (capture) {
@@ -197,15 +192,12 @@ class _CameraTabState extends State<CameraTab>
             },
           ),
 
-          // Затемнённая область вокруг рамки
           Container(color: overlayColor),
 
-          // Анимированная рамка сканирования + сканирующая линия
           Center(
             child: Stack(
               alignment: Alignment.center,
               children: [
-                // Рамка с закруглёнными углами
                 Container(
                   width: 280,
                   height: 280,
@@ -218,7 +210,6 @@ class _CameraTabState extends State<CameraTab>
                   ),
                 ),
 
-                // Угловые акценты
                 ...List.generate(4, (index) {
                   return Positioned(
                     top: index < 2 ? 0 : null,
@@ -274,7 +265,6 @@ class _CameraTabState extends State<CameraTab>
                   );
                 }),
 
-                // Анимированная сканирующая линия
                 AnimatedBuilder(
                   animation: _scanLineAnimation,
                   builder: (context, child) {
@@ -302,7 +292,6 @@ class _CameraTabState extends State<CameraTab>
             ),
           ),
 
-          // Подсказка
           Positioned(
             bottom: 100,
             left: 40,
@@ -331,7 +320,6 @@ class _CameraTabState extends State<CameraTab>
             ),
           ),
 
-          // Кнопка фонарика
           Positioned(
             top: MediaQuery.of(context).padding.top + 20,
             right: 20,
@@ -344,7 +332,6 @@ class _CameraTabState extends State<CameraTab>
             ),
           ),
 
-          // Индикатор обработки
           if (isProcessing)
             Container(
               color: Colors.black.withOpacity(0.8),
