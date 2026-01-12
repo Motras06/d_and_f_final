@@ -4,6 +4,7 @@ import 'package:d_and_f_final/models/product.dart';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:d_and_f_final/services/product_service.dart';
+import 'package:image/image.dart' as img; // зависимость: image: ^4.2.0
 
 class ProductFormDialog extends StatefulWidget {
   final ProductService productService;
@@ -29,9 +30,10 @@ class _ProductFormDialogState extends State<ProductFormDialog> with SingleTicker
 
   XFile? pickedImage;
   String? currentImageUrl;
-  bool isUploading = false;
+  bool isProcessing = false;
 
   final ImagePicker _picker = ImagePicker();
+  final int targetSizeKb = 500;
 
   late AnimationController _animationController;
   late Animation<double> _fadeAnimation;
@@ -46,6 +48,7 @@ class _ProductFormDialogState extends State<ProductFormDialog> with SingleTicker
     countryController = TextEditingController(text: product?.country ?? '');
     priceController = TextEditingController(text: product?.price.toString() ?? '');
     aboutController = TextEditingController(text: product?.about ?? '');
+
     currentImageUrl = product?.imageUrl;
 
     _animationController = AnimationController(
@@ -66,11 +69,11 @@ class _ProductFormDialogState extends State<ProductFormDialog> with SingleTicker
 
   @override
   void dispose() {
-    _animationController.dispose();
     nameController.dispose();
     countryController.dispose();
     priceController.dispose();
     aboutController.dispose();
+    _animationController.dispose();
     super.dispose();
   }
 
@@ -81,7 +84,10 @@ class _ProductFormDialogState extends State<ProductFormDialog> with SingleTicker
         title: const Text('Удалить товар?'),
         content: const Text('Это действие нельзя отменить. Товар будет удалён навсегда.'),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(context, false), child: const Text('Отмена')),
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text('Отмена'),
+          ),
           TextButton(
             onPressed: () => Navigator.pop(context, true),
             child: const Text('Удалить', style: TextStyle(color: Colors.red)),
@@ -92,13 +98,13 @@ class _ProductFormDialogState extends State<ProductFormDialog> with SingleTicker
 
     if (confirm != true) return;
 
-    setState(() => isUploading = true);
+    setState(() => isProcessing = true);
 
     try {
       await widget.productService.deleteProduct(widget.existingProduct!.id);
 
       if (mounted) {
-        Navigator.pop(context, true); 
+        Navigator.pop(context, true);
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
             content: Text('Товар удалён'),
@@ -114,12 +120,62 @@ class _ProductFormDialogState extends State<ProductFormDialog> with SingleTicker
           SnackBar(
             content: Text('Ошибка удаления: $e'),
             backgroundColor: Theme.of(context).colorScheme.error,
+            behavior: SnackBarBehavior.floating,
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.all(Radius.circular(12))),
           ),
         );
       }
     } finally {
-      if (mounted) setState(() => isUploading = false);
+      if (mounted) setState(() => isProcessing = false);
     }
+  }
+
+  Future<XFile?> _compressImage(XFile original) async {
+    try {
+      final bytes = await original.readAsBytes();
+      final image = img.decodeImage(bytes);
+
+      if (image == null) return original;
+
+      int quality = 85;
+      List<int> compressed = img.encodeJpg(image, quality: quality);
+
+      while (compressed.length > targetSizeKb * 1024 && quality > 30) {
+        quality -= 10;
+        compressed = img.encodeJpg(image, quality: quality);
+      }
+
+      if (compressed.length > targetSizeKb * 1024) {
+        final resized = img.copyResize(image, width: (image.width * 0.7).round());
+        compressed = img.encodeJpg(resized, quality: 75);
+      }
+
+      final tempDir = await Directory.systemTemp.createTemp();
+      final path = '${tempDir.path}/compressed_${DateTime.now().millisecondsSinceEpoch}.jpg';
+      final file = File(path);
+      await file.writeAsBytes(compressed);
+
+      return XFile(path);
+    } catch (e) {
+      debugPrint('Ошибка сжатия изображения: $e');
+      return original;
+    }
+  }
+
+  Future<void> _pickImage() async {
+    final XFile? image = await _picker.pickImage(source: ImageSource.gallery);
+    if (image == null) return;
+
+    setState(() => isProcessing = true);
+
+    final compressed = await _compressImage(image);
+    if (compressed != null) {
+      setState(() {
+        pickedImage = compressed;
+      });
+    }
+
+    setState(() => isProcessing = false);
   }
 
   @override
@@ -131,7 +187,7 @@ class _ProductFormDialogState extends State<ProductFormDialog> with SingleTicker
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(28)),
       backgroundColor: theme.cardColor,
       elevation: 20,
-      shadowColor: theme.shadowColor.withOpacity(0.3),
+      contentPadding: const EdgeInsets.all(24),
       title: Text(
         isEdit ? 'Редактирование товара' : 'Новый товар',
         style: theme.textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold),
@@ -145,66 +201,64 @@ class _ProductFormDialogState extends State<ProductFormDialog> with SingleTicker
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
+                // Блок изображения
                 GestureDetector(
-                  onTap: () async {
-                    final image = await _picker.pickImage(source: ImageSource.gallery);
-                    if (image != null) {
-                      setState(() => pickedImage = image);
-                    }
-                  },
-                  child: Hero(
-                    tag: 'product_image_${widget.existingProduct?.id ?? 'new'}',
-                    child: Container(
-                      width: 160,
-                      height: 160,
-                      decoration: BoxDecoration(
-                        borderRadius: BorderRadius.circular(24),
-                        border: Border.all(color: theme.colorScheme.primary.withOpacity(0.3), width: 3),
-                        boxShadow: [
-                          BoxShadow(
-                            color: theme.shadowColor.withOpacity(0.2),
-                            blurRadius: 20,
-                            offset: const Offset(0, 8),
-                          ),
-                        ],
-                      ),
-                      child: ClipRRect(
-                        borderRadius: BorderRadius.circular(21),
-                        child: pickedImage != null
-                            ? Image.file(File(pickedImage!.path), fit: BoxFit.cover)
-                            : currentImageUrl != null
-                                ? Image.network(
-                                    currentImageUrl!,
-                                    fit: BoxFit.cover,
-                                    errorBuilder: (_, __, ___) => Icon(
-                                      Icons.image_not_supported_outlined,
-                                      size: 60,
-                                      color: theme.colorScheme.onSurface.withOpacity(0.5),
-                                    ),
-                                  )
-                                : Icon(
-                                    Icons.add_a_photo_outlined,
+                  onTap: isProcessing ? null : _pickImage,
+                  child: Container(
+                    width: 160,
+                    height: 160,
+                    decoration: BoxDecoration(
+                      borderRadius: BorderRadius.circular(24),
+                      border: Border.all(color: theme.colorScheme.primary.withOpacity(0.4), width: 3),
+                      boxShadow: [
+                        BoxShadow(
+                          color: theme.shadowColor.withOpacity(0.2),
+                          blurRadius: 16,
+                          offset: const Offset(0, 6),
+                        ),
+                      ],
+                    ),
+                    child: ClipRRect(
+                      borderRadius: BorderRadius.circular(21),
+                      child: pickedImage != null
+                          ? Image.file(File(pickedImage!.path), fit: BoxFit.cover)
+                          : currentImageUrl != null
+                              ? Image.network(
+                                  currentImageUrl!,
+                                  fit: BoxFit.cover,
+                                  errorBuilder: (_, __, ___) => Icon(
+                                    Icons.broken_image_outlined,
                                     size: 60,
-                                    color: theme.colorScheme.primary,
+                                    color: theme.colorScheme.onSurface.withOpacity(0.5),
                                   ),
-                      ),
+                                )
+                              : Icon(
+                                  Icons.add_a_photo_outlined,
+                                  size: 60,
+                                  color: theme.colorScheme.primary,
+                                ),
                     ),
                   ),
                 ),
+                const SizedBox(height: 12),
+                Text(
+                  pickedImage != null || (isEdit && currentImageUrl != null)
+                      ? 'Нажмите, чтобы заменить фото'
+                      : 'Нажмите, чтобы добавить фото',
+                  style: theme.textTheme.bodySmall?.copyWith(
+                    color: theme.colorScheme.onSurfaceVariant,
+                  ),
+                ),
+
                 const SizedBox(height: 32),
 
+                // Поля ввода
                 TextField(
                   controller: nameController,
                   decoration: InputDecoration(
                     labelText: 'Название товара',
                     prefixIcon: const Icon(Icons.title),
                     border: OutlineInputBorder(borderRadius: BorderRadius.circular(16)),
-                    focusedBorder: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(16),
-                      borderSide: BorderSide(color: theme.colorScheme.primary, width: 2),
-                    ),
-                    filled: true,
-                    fillColor: theme.colorScheme.surface.withOpacity(0.1),
                   ),
                 ),
                 const SizedBox(height: 16),
@@ -214,28 +268,16 @@ class _ProductFormDialogState extends State<ProductFormDialog> with SingleTicker
                     labelText: 'Страна',
                     prefixIcon: const Icon(Icons.flag_outlined),
                     border: OutlineInputBorder(borderRadius: BorderRadius.circular(16)),
-                    focusedBorder: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(16),
-                      borderSide: BorderSide(color: theme.colorScheme.primary, width: 2),
-                    ),
-                    filled: true,
-                    fillColor: theme.colorScheme.surface.withOpacity(0.1),
                   ),
                 ),
                 const SizedBox(height: 16),
                 TextField(
                   controller: priceController,
-                  keyboardType: TextInputType.number,
+                  keyboardType: const TextInputType.numberWithOptions(decimal: true),
                   decoration: InputDecoration(
-                    labelText: 'Цена (₽)',
-                    prefixIcon: const Icon(Icons.attach_money),
+                    labelText: 'Цена (Руб)',
+                    prefixIcon: const Icon(Icons.money_rounded),
                     border: OutlineInputBorder(borderRadius: BorderRadius.circular(16)),
-                    focusedBorder: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(16),
-                      borderSide: BorderSide(color: theme.colorScheme.primary, width: 2),
-                    ),
-                    filled: true,
-                    fillColor: theme.colorScheme.surface.withOpacity(0.1),
                   ),
                 ),
                 const SizedBox(height: 16),
@@ -246,12 +288,7 @@ class _ProductFormDialogState extends State<ProductFormDialog> with SingleTicker
                     labelText: 'Описание (необязательно)',
                     prefixIcon: const Icon(Icons.description_outlined),
                     border: OutlineInputBorder(borderRadius: BorderRadius.circular(16)),
-                    focusedBorder: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(16),
-                      borderSide: BorderSide(color: theme.colorScheme.primary, width: 2),
-                    ),
-                    filled: true,
-                    fillColor: theme.colorScheme.surface.withOpacity(0.1),
+                    alignLabelWithHint: true,
                   ),
                 ),
               ],
@@ -262,49 +299,57 @@ class _ProductFormDialogState extends State<ProductFormDialog> with SingleTicker
       actions: [
         TextButton(
           onPressed: () => Navigator.pop(context),
-          child: Text('Отмена', style: TextStyle(color: theme.colorScheme.onSurface.withOpacity(0.7))),
+          child: Text('Отмена', style: TextStyle(color: theme.colorScheme.onSurfaceVariant)),
         ),
         if (isEdit)
           TextButton(
-            onPressed: isUploading ? null : _deleteProduct,
-            child: const Text('Удалить товар', style: TextStyle(color: Colors.red, fontWeight: FontWeight.bold)),
+            onPressed: isProcessing ? null : _deleteProduct,
+            child: const Text(
+              'Удалить',
+              style: TextStyle(color: Colors.red, fontWeight: FontWeight.bold),
+            ),
           ),
-        ElevatedButton(
-          onPressed: isUploading
+        FilledButton(
+          onPressed: isProcessing
               ? null
               : () async {
-                  if (nameController.text.trim().isEmpty ||
-                      countryController.text.trim().isEmpty ||
-                      priceController.text.trim().isEmpty) {
+                  final name = nameController.text.trim();
+                  final country = countryController.text.trim();
+                  final priceText = priceController.text.trim();
+
+                  if (name.isEmpty || country.isEmpty || priceText.isEmpty) {
                     ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(
-                        content: const Text('Заполните обязательные поля'),
-                        backgroundColor: theme.colorScheme.error,
-                        behavior: SnackBarBehavior.floating,
-                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                      ),
+                      const SnackBar(content: Text('Заполните обязательные поля')),
                     );
                     return;
                   }
 
-                  setState(() => isUploading = true);
+                  final price = num.tryParse(priceText);
+                  if (price == null) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(content: Text('Некорректная цена')),
+                    );
+                    return;
+                  }
+
+                  setState(() => isProcessing = true);
 
                   try {
                     if (isEdit) {
                       await widget.productService.updateProduct(
                         productId: widget.existingProduct!.id,
-                        name: nameController.text.trim(),
-                        country: countryController.text.trim(),
-                        price: num.parse(priceController.text.trim()),
+                        name: name,
+                        country: country,
+                        price: price,
                         about: aboutController.text.trim().isEmpty ? null : aboutController.text.trim(),
                         newImage: pickedImage,
                         currentImageUrl: currentImageUrl,
                       );
                     } else {
                       await widget.productService.createProduct(
-                        name: nameController.text.trim(),
-                        country: countryController.text.trim(),
-                        price: num.parse(priceController.text.trim()),
+                        name: name,
+                        country: country,
+                        price: price,
                         about: aboutController.text.trim().isEmpty ? null : aboutController.text.trim(),
                         image: pickedImage,
                         userId: widget.userId,
@@ -315,7 +360,7 @@ class _ProductFormDialogState extends State<ProductFormDialog> with SingleTicker
                       Navigator.pop(context, true);
                       ScaffoldMessenger.of(context).showSnackBar(
                         SnackBar(
-                          content: Text(isEdit ? 'Товар обновлён!' : 'Товар создан!'),
+                          content: Text(isEdit ? 'Товар обновлён' : 'Товар добавлен'),
                           backgroundColor: Colors.green,
                           behavior: SnackBarBehavior.floating,
                           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
@@ -334,23 +379,16 @@ class _ProductFormDialogState extends State<ProductFormDialog> with SingleTicker
                       );
                     }
                   } finally {
-                    if (mounted) setState(() => isUploading = false);
+                    if (mounted) setState(() => isProcessing = false);
                   }
                 },
-          style: ElevatedButton.styleFrom(
-            backgroundColor: theme.colorScheme.primary,
-            foregroundColor: theme.colorScheme.onPrimary,
-            padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 16),
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-            elevation: 6,
-          ),
-          child: isUploading
-              ? SizedBox(
-                  height: 24,
-                  width: 24,
-                  child: CircularProgressIndicator(color: theme.colorScheme.onPrimary, strokeWidth: 3),
+          child: isProcessing
+              ? const SizedBox(
+                  width: 20,
+                  height: 20,
+                  child: CircularProgressIndicator(strokeWidth: 3),
                 )
-              : Text(isEdit ? 'Сохранить' : 'Создать', style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+              : Text(isEdit ? 'Сохранить' : 'Добавить'),
         ),
       ],
     );

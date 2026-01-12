@@ -1,7 +1,9 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:provider/provider.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
+import 'package:device_preview/device_preview.dart'; // ← Новый импорт
 
 import 'screens/auth/login_screen.dart';
 import 'screens/tabs/supplier/supplier_home.dart';
@@ -23,7 +25,12 @@ void main() async {
     anonKey: dotenv.env['SUPABASE_ANON_KEY']!,
   );
 
-  runApp(const MainApp());
+  runApp(
+    DevicePreview(
+      enabled: !kReleaseMode, // Включено только в debug-режиме
+      builder: (context) => const MainApp(),
+    ),
+  );
 }
 
 class MainApp extends StatefulWidget {
@@ -114,6 +121,12 @@ class _MainAppState extends State<MainApp> {
             themeMode: themeService.isDarkMode
                 ? ThemeMode.dark
                 : ThemeMode.light,
+
+            // ← Необходимые настройки для DevicePreview
+            useInheritedMediaQuery: true,
+            locale: DevicePreview.locale(context),       // Локаль от DevicePreview
+            builder: DevicePreview.appBuilder,           // Builder от DevicePreview
+
             home: _currentScreen,
           );
         },
