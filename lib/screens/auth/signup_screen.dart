@@ -1,3 +1,4 @@
+import 'package:d_and_f_final/screens/tabs/wholesale_warehouse/wholesale_warehouse_home.dart';
 import 'package:flutter/material.dart';
 import 'package:d_and_f_final/screens/auth/role_select_screen.dart';
 
@@ -5,7 +6,6 @@ import '../../models/role_model.dart';
 import '../../models/profile.dart';
 import '../../services/auth_service.dart';
 
-import '../../screens/tabs/supplier/supplier_home.dart';
 import '../../screens/tabs/hall/hall_home.dart';
 import '../../screens/tabs/storage/storage_home.dart';
 import '../../screens/tabs/admin/admin_home.dart';
@@ -72,7 +72,7 @@ class _SignupScreenState extends State<SignupScreen> with SingleTickerProviderSt
     Widget homeScreen;
     switch (profile.role) {
       case 'supplier':
-        homeScreen = SupplierHome(profile: profile);
+        homeScreen = WholesaleWarehouseHome(profile: profile);
         break;
       case 'hall':
         homeScreen = HallHome(profile: profile);
@@ -84,7 +84,7 @@ class _SignupScreenState extends State<SignupScreen> with SingleTickerProviderSt
         homeScreen = AdminHome(profile: profile);
         break;
       default:
-        homeScreen = SupplierHome(profile: profile);
+        homeScreen = WholesaleWarehouseHome(profile: profile);
     }
 
     if (!mounted) return;

@@ -14,19 +14,19 @@ class RoleItem {
 final List<RoleItem> _roleItems = [
   const RoleItem(
     AppRole.supplier,
-    'Поставщик',
+    'Оптовый склад',
     Icons.local_shipping_outlined,
-    'Создание товаров и поставок',
+    'Создание товаров и поставок, учёт остатков',
   ),
   const RoleItem(
     AppRole.hall,
-    'Менеджер зала',
+    'Учёт и контроль товарами зала',
     Icons.store_mall_directory_outlined,
     'Просмотр товаров и сканирование',
   ),
   const RoleItem(
     AppRole.storage,
-    'Кладовщик',
+    'Малый склад',
     Icons.inventory_2_outlined,
     'Приёмка поставок и учёт остатков',
   ),
@@ -141,10 +141,9 @@ class _RoleSelectScreenState extends State<RoleSelectScreen>
                         const SizedBox(height: 40),
 
                         Wrap(
-                          spacing: 20, 
-                          runSpacing: 20, 
-                          alignment: WrapAlignment
-                              .center, 
+                          spacing: 20,
+                          runSpacing: 20,
+                          alignment: WrapAlignment.center,
                           children: _roleItems.map((item) {
                             final isSelected = _selectedRole == item.role;
 
@@ -153,15 +152,12 @@ class _RoleSelectScreenState extends State<RoleSelectScreen>
                               child: AnimatedContainer(
                                 duration: const Duration(milliseconds: 300),
                                 curve: Curves.easeInOut,
-                                width:
-                                    140, 
-                                height: 140, 
+                                width: 140,
+                                height: 180, // увеличил высоту, чтобы длинные названия помещались
                                 decoration: BoxDecoration(
                                   color: isSelected
                                       ? theme.colorScheme.primary
-                                      : theme.colorScheme.surface.withOpacity(
-                                          0.1,
-                                        ),
+                                      : theme.colorScheme.surface.withOpacity(0.1),
                                   borderRadius: BorderRadius.circular(20),
                                   border: Border.all(
                                     color: isSelected
@@ -195,22 +191,26 @@ class _RoleSelectScreenState extends State<RoleSelectScreen>
                                       item.title,
                                       textAlign: TextAlign.center,
                                       style: TextStyle(
-                                        fontSize: 14,
+                                        fontSize: 13, // чуть уменьшил, чтобы длинные названия помещались
                                         fontWeight: isSelected
                                             ? FontWeight.bold
-                                            : FontWeight.w500,
+                                            : FontWeight.w600,
                                         color: isSelected ? Colors.white : null,
                                       ),
                                     ),
-                                    const SizedBox(height: 4),
-                                    Text(
-                                      item.description,
-                                      textAlign: TextAlign.center,
-                                      style: TextStyle(
-                                        fontSize: 10,
-                                        color: isSelected
-                                            ? Colors.white70
-                                            : theme.textTheme.bodySmall?.color,
+                                    const SizedBox(height: 8),
+                                    Padding(
+                                      padding: const EdgeInsets.symmetric(horizontal: 8.0),
+                                      child: Text(
+                                        item.description,
+                                        textAlign: TextAlign.center,
+                                        style: TextStyle(
+                                          fontSize: 10,
+                                          height: 1.2,
+                                          color: isSelected
+                                              ? Colors.white70
+                                              : theme.textTheme.bodySmall?.color,
+                                        ),
                                       ),
                                     ),
                                   ],

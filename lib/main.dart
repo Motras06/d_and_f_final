@@ -1,3 +1,4 @@
+import 'package:d_and_f_final/screens/tabs/wholesale_warehouse/wholesale_warehouse_home.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
@@ -6,7 +7,6 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:device_preview/device_preview.dart'; // ← Новый импорт
 
 import 'screens/auth/login_screen.dart';
-import 'screens/tabs/supplier/supplier_home.dart';
 import 'screens/tabs/hall/hall_home.dart';
 import 'screens/tabs/storage/storage_home.dart';
 import 'screens/tabs/admin/admin_home.dart';
@@ -85,7 +85,7 @@ class _MainAppState extends State<MainApp> {
     Widget homeScreen;
     switch (profile.role) {
       case 'supplier':
-        homeScreen = SupplierHome(profile: profile);
+        homeScreen = WholesaleWarehouseHome(profile: profile);
         break;
       case 'hall':
         homeScreen = HallHome(profile: profile);
