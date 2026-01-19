@@ -2,10 +2,9 @@ import 'dart:convert';
 
 import 'package:flutter/material.dart';
 import 'package:share_plus/share_plus.dart';
-import 'package:d_and_f_final/models/stock_item.dart';
 
 class StockItemDialog extends StatelessWidget {
-  final StockItem item;
+  final Map<String, dynamic> item;
   final ValueChanged<int> onUpdate;
   final VoidCallback onDelete;
 
@@ -20,26 +19,51 @@ class StockItemDialog extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final isDark = theme.brightness == Brightness.dark;
-    final controller = TextEditingController(text: item.quantity.toString());
 
-    final safeProduct = {
-      'id': item.productId,
-      'name': item.name,
-      'country': item.country,
-      'price': item.price,
-      'quantity': item.quantity,
-      'about': item.about ?? '',
+    final controller = TextEditingController(text: (item['quantity'] ?? 0).toString());
+
+    // Извлекаем все поля безопасно
+    final name = item['name'] as String? ?? 'Товар без названия';
+    final country = item['country'] as String? ?? '—';
+    final price = (item['price'] as num?)?.toStringAsFixed(2) ?? '—';
+    final priceWithVat = (item['price_with_vat'] as num?)?.toStringAsFixed(2) ?? '—';
+    final unit = item['unit_of_measure'] as String? ?? 'шт';
+    final vatRate = (item['vat_rate'] as num?)?.toStringAsFixed(1) ?? '20.0';
+    final vatAmount = (item['vat_amount'] as num?)?.toStringAsFixed(2) ?? '—';
+    final about = item['about'] as String?;
+    final imageUrl = item['image_url'] as String?;
+    final createdAt = item['created_at'] != null
+        ? (item['created_at'] as String).substring(0, 10)
+        : '—';
+
+    final qty = item['quantity'] as int? ?? 0;
+    final qtyColor = qty > 10
+        ? Colors.green
+        : (qty > 0 ? Colors.orange : Colors.red);
+
+    // QR-код
+    final safeData = {
+      'id': item['product_id'],
+      'name': name,
+      'country': country,
+      'price': price,
+      'priceWithVat': priceWithVat,
+      'quantity': qty,
+      'unit': unit,
     };
-
-    final qrData = jsonEncode(safeProduct);
-
-    final qrUrl =
-        'https://quickchart.io/qr?text=$qrData&size=300&margin=20&light=ffffff&dark=121212';
+    final qrData = jsonEncode(safeData);
+    final qrUrl = 'https://quickchart.io/qr?text=$qrData&size=300&margin=20&light=ffffff&dark=121212';
 
     void shareQR() {
       Share.share(
-        'QR-код товара\n\n${item.name}\nЦена: ${item.price} ₽\nОстаток: ${item.quantity}\n\nСсылка для сканирования: $qrUrl',
-        subject: 'QR-код товара: ${item.name}',
+        'QR-код товара\n\n'
+        'Название: $name\n'
+        'Страна: $country\n'
+        'Цена: $price ₽ (с НДС $priceWithVat ₽)\n'
+        'Остаток: $qty $unit\n'
+        'Описание: ${about ?? '—'}\n'
+        'Ссылка для сканирования: $qrUrl',
+        subject: 'QR-код товара: $name',
       );
     }
 
@@ -53,19 +77,13 @@ class StockItemDialog extends StatelessWidget {
         decoration: BoxDecoration(
           gradient: LinearGradient(
             colors: isDark
-                ? [
-                    theme.colorScheme.primary.withOpacity(0.3),
-                    Colors.transparent,
-                  ]
-                : [
-                    theme.colorScheme.primary.withOpacity(0.2),
-                    Colors.transparent,
-                  ],
+                ? [theme.colorScheme.primary.withOpacity(0.3), Colors.transparent]
+                : [theme.colorScheme.primary.withOpacity(0.2), Colors.transparent],
           ),
           borderRadius: const BorderRadius.vertical(top: Radius.circular(32)),
         ),
         child: Text(
-          item.name,
+          name,
           textAlign: TextAlign.center,
           style: theme.textTheme.headlineMedium?.copyWith(
             fontWeight: FontWeight.bold,
@@ -83,35 +101,34 @@ class StockItemDialog extends StatelessWidget {
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              if (item.imageUrl != null)
+              // Фото товара
+              if (imageUrl != null)
                 Center(
-                  child: Hero(
-                    tag: 'product_image_${item.productId}',
-                    child: ClipRRect(
-                      borderRadius: BorderRadius.circular(24),
-                      child: Image.network(
-                        item.imageUrl!,
+                  child: ClipRRect(
+                    borderRadius: BorderRadius.circular(24),
+                    child: Image.network(
+                      imageUrl,
+                      height: 220,
+                      width: double.infinity,
+                      fit: BoxFit.cover,
+                      errorBuilder: (_, __, ___) => Container(
                         height: 220,
-                        width: double.infinity,
-                        fit: BoxFit.cover,
-                        errorBuilder: (_, __, ___) => Container(
-                          height: 220,
-                          decoration: BoxDecoration(
-                            color: theme.colorScheme.surface.withOpacity(0.3),
-                            borderRadius: BorderRadius.circular(24),
-                          ),
-                          child: Icon(
-                            Icons.inventory_2_outlined,
-                            size: 100,
-                            color: theme.colorScheme.primary,
-                          ),
+                        decoration: BoxDecoration(
+                          color: theme.colorScheme.surface.withOpacity(0.3),
+                          borderRadius: BorderRadius.circular(24),
+                        ),
+                        child: Icon(
+                          Icons.inventory_2_outlined,
+                          size: 100,
+                          color: theme.colorScheme.primary,
                         ),
                       ),
                     ),
                   ),
                 ),
-              const SizedBox(height: 32),
+              if (imageUrl != null) const SizedBox(height: 32),
 
+              // QR-код
               Center(
                 child: Container(
                   padding: const EdgeInsets.all(24),
@@ -134,14 +151,10 @@ class StockItemDialog extends StatelessWidget {
                         height: 260,
                         loadingBuilder: (context, child, loadingProgress) {
                           if (loadingProgress == null) return child;
-                          return SizedBox(
+                          return const SizedBox(
                             width: 260,
                             height: 260,
-                            child: Center(
-                              child: CircularProgressIndicator(
-                                color: theme.colorScheme.primary,
-                              ),
-                            ),
+                            child: Center(child: CircularProgressIndicator()),
                           );
                         },
                         errorBuilder: (_, __, ___) => Icon(
@@ -165,138 +178,174 @@ class StockItemDialog extends StatelessWidget {
               ),
               const SizedBox(height: 32),
 
-              Container(
-                padding: const EdgeInsets.all(20),
-                decoration: BoxDecoration(
-                  color: theme.colorScheme.surface.withOpacity(
-                    isDark ? 0.3 : 0.5,
-                  ),
-                  borderRadius: BorderRadius.circular(24),
-                ),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
+              // Основная информация
+              _infoCard(
+                context,
+                title: 'Основные характеристики',
+                children: [
+                  _infoRow(Icons.flag_outlined, 'Страна происхождения', country),
+                  _infoRow(Icons.monetization_on_outlined, 'Цена без НДС', '$price ₽'),
+                  _infoRow(Icons.price_check, 'Цена с НДС', '$priceWithVat ₽'),
+                  _infoRow(Icons.straighten, 'Единица измерения', unit),
+                  _infoRow(Icons.calendar_today_outlined, 'Добавлен', createdAt),
+                ],
+              ),
+
+              const SizedBox(height: 16),
+
+              // НДС
+              _infoCard(
+                context,
+                title: 'НДС',
+                children: [
+                  _infoRow(Icons.percent, 'Ставка НДС', '$vatRate%'),
+                  _infoRow(Icons.attach_money, 'Сумма НДС', '$vatAmount ₽'),
+                ],
+              ),
+
+              const SizedBox(height: 16),
+
+              // Описание
+              if (about != null && about.isNotEmpty)
+                _infoCard(
+                  context,
+                  title: 'Описание товара',
                   children: [
-                    _infoRow('Страна происхождения', item.country, theme),
-                    const SizedBox(height: 12),
-                    _infoRow('Цена', '${item.price} Руб', theme),
-                    if (item.about != null && item.about!.isNotEmpty) ...[
-                      const SizedBox(height: 12),
-                      Text(
-                        'Описание',
-                        style: theme.textTheme.titleMedium?.copyWith(
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                      const SizedBox(height: 8),
-                      Text(item.about!, style: theme.textTheme.bodyMedium),
-                    ],
+                    Text(
+                      about,
+                      style: theme.textTheme.bodyMedium,
+                    ),
                   ],
                 ),
-              ),
+
               const SizedBox(height: 32),
 
-              Text(
-                'Изменить количество на складе',
-                style: theme.textTheme.titleMedium?.copyWith(
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-              const SizedBox(height: 16),
-              TextField(
-                controller: controller,
-                keyboardType: TextInputType.number,
-                textAlign: TextAlign.center,
-                style: const TextStyle(
-                  fontSize: 24,
-                  fontWeight: FontWeight.bold,
-                ),
-                decoration: InputDecoration(
-                  hintText: '${item.quantity}',
-                  filled: true,
-                  fillColor: theme.colorScheme.surface.withOpacity(0.2),
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(32),
-                    borderSide: BorderSide.none,
-                  ),
-                  contentPadding: const EdgeInsets.symmetric(vertical: 20),
+              // Количество
+              Center(
+                child: Column(
+                  children: [
+                    Text(
+                      'Текущее количество на складе',
+                      style: theme.textTheme.titleMedium,
+                    ),
+                    const SizedBox(height: 8),
+                    Text(
+                      '$qty $unit',
+                      style: theme.textTheme.headlineMedium?.copyWith(
+                        fontWeight: FontWeight.bold,
+                        color: qtyColor,
+                      ),
+                    ),
+                    const SizedBox(height: 16),
+                    TextField(
+                      controller: controller,
+                      keyboardType: TextInputType.number,
+                      textAlign: TextAlign.center,
+                      style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
+                      decoration: InputDecoration(
+                        labelText: 'Новое количество',
+                        border: OutlineInputBorder(borderRadius: BorderRadius.circular(16)),
+                        filled: true,
+                        fillColor: theme.colorScheme.surfaceVariant.withOpacity(0.3),
+                        contentPadding: const EdgeInsets.symmetric(vertical: 16),
+                      ),
+                    ),
+                  ],
                 ),
               ),
             ],
           ),
         ),
       ),
+      actionsPadding: const EdgeInsets.fromLTRB(24, 8, 24, 24),
       actions: [
-        TextButton(
-          onPressed: () => Navigator.pop(context),
-          child: Text(
-            'Закрыть',
-            style: TextStyle(
-              color: theme.colorScheme.onSurface.withOpacity(0.7),
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            TextButton.icon(
+              onPressed: shareQR,
+              icon: const Icon(Icons.share_outlined),
+              label: const Text('Поделиться QR'),
             ),
-          ),
-        ),
-        ElevatedButton.icon(
-          onPressed: shareQR,
-          icon: const Icon(Icons.share_outlined),
-          label: const Text('Поделиться QR'),
-          style: ElevatedButton.styleFrom(
-            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(32),
+            Row(
+              children: [
+                TextButton(
+                  onPressed: () => Navigator.pop(context),
+                  child: const Text('Закрыть'),
+                ),
+                const SizedBox(width: 8),
+                TextButton(
+                  onPressed: () {
+                    Navigator.pop(context);
+                    onDelete();
+                  },
+                  child: const Text('Удалить', style: TextStyle(color: Colors.red)),
+                ),
+                const SizedBox(width: 8),
+                ElevatedButton(
+                  onPressed: () {
+                    final newQty = int.tryParse(controller.text) ?? qty;
+                    Navigator.pop(context);
+                    onUpdate(newQty);
+                  },
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Colors.green,
+                    foregroundColor: Colors.white,
+                    padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(32)),
+                  ),
+                  child: const Text('Сохранить', style: TextStyle(fontWeight: FontWeight.bold)),
+                ),
+              ],
             ),
-          ),
-        ),
-        ElevatedButton(
-          onPressed: () {
-            final newQty = int.tryParse(controller.text) ?? item.quantity;
-            Navigator.pop(context);
-            onUpdate(newQty);
-          },
-          style: ElevatedButton.styleFrom(
-            backgroundColor: Colors.green,
-            padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(32),
-            ),
-          ),
-          child: const Text(
-            'Сохранить',
-            style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
-          ),
-        ),
-        TextButton(
-          onPressed: () {
-            Navigator.pop(context);
-            onDelete();
-          },
-          child: const Text(
-            'Удалить товар',
-            style: TextStyle(color: Colors.red, fontWeight: FontWeight.bold),
-          ),
+          ],
         ),
       ],
-      actionsPadding: const EdgeInsets.fromLTRB(24, 8, 24, 24),
       actionsAlignment: MainAxisAlignment.spaceEvenly,
     );
   }
 
-  Widget _infoRow(String label, String value, ThemeData theme) {
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-      children: [
-        Text(
-          label,
-          style: theme.textTheme.bodyMedium?.copyWith(
-            color: theme.colorScheme.onSurface.withOpacity(0.7),
-          ),
+  Widget _infoCard(BuildContext context, {required String title, required List<Widget> children}) {
+    final theme = Theme.of(context);
+    return Card(
+      elevation: 2,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              title,
+              style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold),
+            ),
+            const SizedBox(height: 12),
+            ...children,
+          ],
         ),
-        Text(
-          value,
-          style: theme.textTheme.bodyLarge?.copyWith(
-            fontWeight: FontWeight.bold,
+      ),
+    );
+  }
+
+  Widget _infoRow(IconData icon, String label, String value) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 6),
+      child: Row(
+        children: [
+          Icon(icon, size: 20, color: Colors.grey[600]),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Text(
+              label,
+              style: const TextStyle(color: Colors.grey),
+            ),
           ),
-        ),
-      ],
+          Text(
+            value,
+            style: const TextStyle(fontWeight: FontWeight.w600),
+          ),
+        ],
+      ),
     );
   }
 }

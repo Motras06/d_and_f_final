@@ -1,9 +1,12 @@
+import 'dart:io';
 import 'package:d_and_f_final/models/stock_item.dart';
 import 'package:flutter/material.dart';
 import 'package:d_and_f_final/models/profile.dart';
 import '/services/stock_service.dart';
 import 'widgets/stock_item_card.dart';
 import 'widgets/stock_item_dialog.dart';
+import 'package:path_provider/path_provider.dart';
+import 'package:open_filex/open_filex.dart';
 
 class StockAvailabilityTab extends StatefulWidget {
   final Profile profile;
@@ -40,13 +43,9 @@ class _StockAvailabilityTabState extends State<StockAvailabilityTab>
       CurvedAnimation(parent: _animationController, curve: Curves.easeInOut),
     );
 
-    _slideAnimation =
-        Tween<Offset>(begin: const Offset(0, 0.3), end: Offset.zero).animate(
-          CurvedAnimation(
-            parent: _animationController,
-            curve: Curves.easeOutCubic,
-          ),
-        );
+    _slideAnimation = Tween<Offset>(begin: const Offset(0, 0.3), end: Offset.zero).animate(
+      CurvedAnimation(parent: _animationController, curve: Curves.easeOutCubic),
+    );
 
     _animationController.forward();
   }
@@ -88,9 +87,7 @@ class _StockAvailabilityTabState extends State<StockAvailabilityTab>
           content: const Text('Количество обновлено'),
           backgroundColor: Colors.green,
           behavior: SnackBarBehavior.floating,
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(12),
-          ),
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
         ),
       );
 
@@ -134,28 +131,104 @@ class _StockAvailabilityTabState extends State<StockAvailabilityTab>
           content: const Text('Товар удалён со склада'),
           backgroundColor: Colors.orange,
           behavior: SnackBarBehavior.floating,
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(12),
-          ),
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
         ),
       );
 
       loadStock();
     } catch (e) {
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(SnackBar(content: Text('Ошибка удаления: $e')));
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Ошибка удаления: $e')),
+      );
     }
   }
 
-  void showProductDetails(StockItem item) {
-    showDialog(
-      context: context,
-      builder: (context) => StockItemDialog(
-        item: item,
-        onUpdate: (newQty) =>
-            updateQuantity(item.productId, newQty), 
-        onDelete: () => deleteProduct(item.productId),
+  void showProductDetails(StockItem stockItem) {
+  // Костыль: преобразуем StockItem в Map
+  final itemMap = {
+    'product_id': stockItem.productId,
+    'name': stockItem.name,
+    'country': stockItem.country,
+    'price': stockItem.price,
+    'quantity': stockItem.quantity,
+    'image_url': stockItem.imageUrl,
+    'about': stockItem.about,
+    // если есть другие поля — добавь их сюда
+  };
+
+  showDialog(
+    context: context,
+    builder: (context) => StockItemDialog(
+      item: itemMap,
+      onUpdate: (newQty) => updateQuantity(stockItem.productId, newQty),
+      onDelete: () => deleteProduct(stockItem.productId),
+    ),
+  );
+}
+
+  // НОВЫЙ МЕТОД: Экспорт ВСЕГО склада в CSV
+  Future<void> _exportFullStockToCsv() async {
+    if (stockItems.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('На складе нет товаров для экспорта')),
+      );
+      return;
+    }
+
+    try {
+      // Формируем CSV
+      final List<List<String>> csvData = [
+        ['№', 'Товар', 'Количество', 'Ед. изм.', 'Цена с НДС (₽)', 'Сумма (₽)'],
+      ];
+
+      double totalValue = 0;
+
+      for (int i = 0; i < stockItems.length; i++) {
+        final item = stockItems[i];
+        final sum = item.quantity * (item.price);
+        totalValue += sum;
+
+        csvData.add([
+          '${i + 1}',
+          item.name,
+          item.quantity.toString(),
+          'шт',
+          (item.price).toStringAsFixed(2),
+          sum.toStringAsFixed(2),
+        ]);
+      }
+
+      csvData.add([]); // пустая строка
+      csvData.add(['Итого по складу:', '', '', '', '', totalValue.toStringAsFixed(2)]);
+
+      final csvString = csvData.map((row) => row.join(';')).join('\n');
+
+      // Сохраняем файл
+      final directory = await getTemporaryDirectory();
+      final path = '${directory.path}/остатки_склада_${DateTime.now().toIso8601String().substring(0, 10)}.csv';
+      final file = File(path);
+      await file.writeAsString('sep=;\n$csvString'); // sep=; для корректного открытия в Excel RU
+
+      // Открываем файл (Excel / Sheets предложит открыть и распечатать)
+      final result = await OpenFilex.open(path);
+
+      if (result.type != ResultType.done) {
+        _showSnack('Не удалось открыть файл: ${result.message}', isError: true);
+      } else {
+        _showSnack('Файл открыт! Распечатайте из Excel / Google Sheets', isSuccess: true);
+      }
+    } catch (e) {
+      _showSnack('Ошибка экспорта: $e', isError: true);
+    }
+  }
+
+  void _showSnack(String msg, {bool isError = false, bool isSuccess = false}) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(msg),
+        backgroundColor: isError ? Colors.red : (isSuccess ? Colors.green : null),
+        behavior: SnackBarBehavior.floating,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
       ),
     );
   }
@@ -168,112 +241,93 @@ class _StockAvailabilityTabState extends State<StockAvailabilityTab>
 
     return Scaffold(
       backgroundColor: backgroundColor,
+      floatingActionButtonLocation: FloatingActionButtonLocation.centerFloat,
+      floatingActionButton: Padding(
+        padding: const EdgeInsets.only(bottom: 80), // отступ от bottom nav
+        child: FloatingActionButton.extended(
+          onPressed: stockItems.isEmpty ? null : _exportFullStockToCsv,
+          icon: const Icon(Icons.table_chart),
+          label: const Text('Экспорт всего склада в CSV (Excel)'),
+          backgroundColor: Colors.green[700],
+          foregroundColor: Colors.white,
+        ),
+      ),
       body: SafeArea(
         child: FadeTransition(
           opacity: _fadeAnimation,
           child: SlideTransition(
             position: _slideAnimation,
             child: isLoading
-                ? Center(
-                    child: CircularProgressIndicator(
-                      color: theme.colorScheme.primary,
-                    ),
-                  )
+                ? Center(child: CircularProgressIndicator(color: theme.colorScheme.primary))
                 : errorMessage != null
-                ? Center(
-                    child: Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        Icon(
-                          Icons.error_outline,
-                          size: 80,
-                          color: theme.colorScheme.error,
+                    ? Center(
+                        child: Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Icon(Icons.error_outline, size: 80, color: theme.colorScheme.error),
+                            const SizedBox(height: 24),
+                            Text(errorMessage!, style: const TextStyle(fontSize: 18)),
+                          ],
                         ),
-                        const SizedBox(height: 24),
-                        Text(
-                          errorMessage!,
-                          style: const TextStyle(fontSize: 18),
-                        ),
-                      ],
-                    ),
-                  )
-                : stockItems.isEmpty
-                ? Center(
-                    child: Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        Icon(
-                          Icons.inventory_2_outlined,
-                          size: 100,
-                          color: Colors.grey[600],
-                        ),
-                        const SizedBox(height: 24),
-                        const Text(
-                          'На складе пусто',
-                          style: TextStyle(
-                            fontSize: 24,
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
-                        const SizedBox(height: 12),
-                        Text(
-                          'Товары появятся после приёмки поставок',
-                          style: TextStyle(
-                            fontSize: 16,
-                            color: Colors.grey[600],
-                          ),
-                        ),
-                      ],
-                    ),
-                  )
-                : Column(
-                    children: [
-                      Padding(
-                        padding: const EdgeInsets.all(20.0),
-                        child: Card(
-                          elevation: 6,
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(24),
-                          ),
-                          color: theme.cardColor,
-                          child: Padding(
-                            padding: const EdgeInsets.symmetric(vertical: 20),
-                            child: Row(
+                      )
+                    : stockItems.isEmpty
+                        ? Center(
+                            child: Column(
                               mainAxisAlignment: MainAxisAlignment.center,
                               children: [
-                                Icon(
-                                  Icons.storage_outlined,
-                                  size: 32,
-                                  color: theme.colorScheme.primary,
+                                Icon(Icons.inventory_2_outlined, size: 100, color: Colors.grey[600]),
+                                const SizedBox(height: 24),
+                                const Text(
+                                  'На складе пусто',
+                                  style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
                                 ),
-                                const SizedBox(width: 16),
+                                const SizedBox(height: 12),
                                 Text(
-                                  'Склад: $storeName',
-                                  style: theme.textTheme.titleLarge?.copyWith(
-                                    fontWeight: FontWeight.bold,
-                                  ),
+                                  'Товары появятся после приёмки поставок',
+                                  style: TextStyle(fontSize: 16, color: Colors.grey[600]),
                                 ),
                               ],
                             ),
+                          )
+                        : Column(
+                            children: [
+                              Padding(
+                                padding: const EdgeInsets.all(20.0),
+                                child: Card(
+                                  elevation: 6,
+                                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
+                                  color: theme.cardColor,
+                                  child: Padding(
+                                    padding: const EdgeInsets.symmetric(vertical: 20),
+                                    child: Row(
+                                      mainAxisAlignment: MainAxisAlignment.center,
+                                      children: [
+                                        Icon(Icons.storage_outlined, size: 32, color: theme.colorScheme.primary),
+                                        const SizedBox(width: 16),
+                                        Text(
+                                          'Склад: $storeName',
+                                          style: theme.textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold),
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                ),
+                              ),
+                              Expanded(
+                                child: ListView.builder(
+                                  padding: const EdgeInsets.symmetric(horizontal: 16),
+                                  itemCount: stockItems.length,
+                                  itemBuilder: (context, index) {
+                                    final item = stockItems[index];
+                                    return StockItemCard(
+                                      item: item,
+                                      onTap: () => showProductDetails(item),
+                                    );
+                                  },
+                                ),
+                              ),
+                            ],
                           ),
-                        ),
-                      ),
-
-                      Expanded(
-                        child: ListView.builder(
-                          padding: const EdgeInsets.symmetric(horizontal: 16),
-                          itemCount: stockItems.length,
-                          itemBuilder: (context, index) {
-                            final item = stockItems[index];
-                            return StockItemCard(
-                              item: item,
-                              onTap: () => showProductDetails(item),
-                            );
-                          },
-                        ),
-                      ),
-                    ],
-                  ),
           ),
         ),
       ),

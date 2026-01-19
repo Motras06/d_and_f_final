@@ -4,7 +4,7 @@ import 'package:d_and_f_final/models/profile.dart';
 import 'orders_tab.dart';          // Заказы
 import 'distribution_tab.dart';   // Распределение
 import 'accounting_tab.dart';     // Учёт
-import 'profile_tab.dart';        // Профиль (можно переиспользовать или сделать отдельный)
+import 'profile_tab.dart';        // Профиль
 import '../../settings/settings_screen.dart';
 
 class WholesaleWarehouseHome extends StatefulWidget {
@@ -30,7 +30,7 @@ class _WholesaleWarehouseHomeState extends State<WholesaleWarehouseHome>
       const OrdersTab(),
       const DistributionTab(),
       const AccountingTab(),
-      ProfileTab(profile: widget.profile), // можно переиспользовать существующий
+      ProfileTab(profile: widget.profile),
     ];
 
     _animationController = AnimationController(
@@ -74,7 +74,7 @@ class _WholesaleWarehouseHomeState extends State<WholesaleWarehouseHome>
     final isDark = theme.brightness == Brightness.dark;
 
     return Scaffold(
-      extendBodyBehindAppBar: true,
+      // НЕ используем extendBodyBehindAppBar — контент не должен лезть под AppBar
       appBar: AppBar(
         title: const Text('Оптовый склад • D&F'),
         backgroundColor: theme.appBarTheme.backgroundColor?.withOpacity(0.9),
@@ -89,29 +89,31 @@ class _WholesaleWarehouseHomeState extends State<WholesaleWarehouseHome>
           )
         ],
       ),
-      body: Stack(
-        children: [
-          Container(
-            decoration: BoxDecoration(
-              gradient: LinearGradient(
-                begin: Alignment.topCenter,
-                end: Alignment.bottomCenter,
-                colors: isDark
-                    ? [theme.colorScheme.background, theme.colorScheme.background.withOpacity(0.8)]
-                    : [Colors.indigo[50]!, Colors.white],
+      body: SafeArea(  // ← главное исправление: контент не уходит под AppBar и системные вырезы
+        child: Stack(
+          children: [
+            Container(
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  begin: Alignment.topCenter,
+                  end: Alignment.bottomCenter,
+                  colors: isDark
+                      ? [theme.colorScheme.background, theme.colorScheme.background.withOpacity(0.8)]
+                      : [Colors.indigo[50]!, Colors.white],
+                ),
               ),
             ),
-          ),
-          AnimatedSwitcher(
-            duration: const Duration(milliseconds: 400),
-            transitionBuilder: (child, animation) => FadeTransition(opacity: animation, child: child),
-            child: Padding(
-              key: ValueKey<int>(_selectedIndex),
-              padding: const EdgeInsets.only(top: 5.0),
-              child: _pages[_selectedIndex],
+            AnimatedSwitcher(
+              duration: const Duration(milliseconds: 400),
+              transitionBuilder: (child, animation) => FadeTransition(opacity: animation, child: child),
+              child: Padding(
+                key: ValueKey<int>(_selectedIndex),
+                padding: const EdgeInsets.only(top: 8.0), // небольшой отступ сверху для красоты
+                child: _pages[_selectedIndex],
+              ),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
       bottomNavigationBar: BottomNavigationBar(
         currentIndex: _selectedIndex,
