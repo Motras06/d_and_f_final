@@ -275,7 +275,7 @@ class _ProductFormDialogState extends State<ProductFormDialog> with SingleTicker
                   controller: priceController,
                   keyboardType: const TextInputType.numberWithOptions(decimal: true),
                   decoration: InputDecoration(
-                    labelText: 'Цена (Руб)',
+                    labelText: 'Цена (BYN)',
                     prefixIcon: const Icon(Icons.money_rounded),
                     border: OutlineInputBorder(borderRadius: BorderRadius.circular(16)),
                   ),

@@ -1,3 +1,4 @@
+// lib/screens/tabs/wholesale_warehouse/accounting_tab.dart
 import 'package:d_and_f_final/screens/tabs/wholesale_warehouse/widgets/stock_item_card.dart';
 import 'package:d_and_f_final/screens/tabs/wholesale_warehouse/widgets/stock_item_dialog.dart';
 import 'package:flutter/material.dart';
@@ -10,8 +11,7 @@ class AccountingTab extends StatefulWidget {
   State<AccountingTab> createState() => _AccountingTabState();
 }
 
-class _AccountingTabState extends State<AccountingTab>
-    with SingleTickerProviderStateMixin {
+class _AccountingTabState extends State<AccountingTab> with SingleTickerProviderStateMixin {
   final supabase = Supabase.instance.client;
 
   String? storeName;
@@ -30,22 +30,27 @@ class _AccountingTabState extends State<AccountingTab>
 
     _animationController = AnimationController(
       vsync: this,
-      duration: const Duration(milliseconds: 800),
+      duration: const Duration(milliseconds: 600),
     );
 
-    _fadeAnimation = Tween<double>(begin: 0.0, end: 1.0).animate(
-      CurvedAnimation(parent: _animationController, curve: Curves.easeInOut),
+    _fadeAnimation = CurvedAnimation(
+      parent: _animationController,
+      curve: Curves.easeOutCubic,
     );
 
-    _slideAnimation =
-        Tween<Offset>(begin: const Offset(0, 0.3), end: Offset.zero).animate(
-          CurvedAnimation(
-            parent: _animationController,
-            curve: Curves.easeOutCubic,
-          ),
-        );
+    _slideAnimation = Tween<Offset>(
+      begin: const Offset(0, 0.25),
+      end: Offset.zero,
+    ).animate(
+      CurvedAnimation(
+        parent: _animationController,
+        curve: Curves.easeOutCubic,
+      ),
+    );
 
-    _animationController.forward();
+    Future.delayed(const Duration(milliseconds: 300), () {
+      if (mounted) _animationController.forward();
+    });
   }
 
   @override
@@ -58,11 +63,11 @@ class _AccountingTabState extends State<AccountingTab>
     setState(() {
       isLoading = true;
       errorMessage = null;
-      stockItems = []; // очищаем старые данные
+      stockItems = [];
     });
 
     try {
-      // 1. Получаем магазин пользователя (берём первый)
+      // 1. Магазин пользователя (берём первый)
       final assignment = await supabase
           .from('store_assignments')
           .select('store_name')
@@ -76,29 +81,27 @@ class _AccountingTabState extends State<AccountingTab>
       final store = assignment['store_name'] as String;
       setState(() => storeName = store);
 
-      // 2. Загружаем остатки + join с products (без .order на сервере)
+      // 2. Остатки + продукты
       final response = await supabase
           .from('store_stock')
           .select('''
-          product_id,
-          quantity,
-          products!inner (
-            id,
-            name,
-            country,
-            price,
-            price_with_vat,
-            image_url,
-            unit_of_measure,
-            about
-          )
-        ''')
+            product_id,
+            quantity,
+            products!inner (
+              id,
+              name,
+              country,
+              price,
+              price_with_vat,
+              image_url,
+              unit_of_measure,
+              about
+            )
+          ''')
           .eq('store_name', store);
 
-      // 3. Приводим к списку карт безопасно
       final List<dynamic> rawData = response ?? [];
 
-      // Фильтруем и преобразуем только валидные записи
       final List<Map<String, dynamic>> mappedItems = rawData
           .whereType<Map<String, dynamic>>()
           .map((row) {
@@ -108,8 +111,7 @@ class _AccountingTabState extends State<AccountingTab>
               'quantity': row['quantity'] as int? ?? 0,
               'name': product['name'] as String? ?? 'Без названия',
               'country': product['country'] as String? ?? '—',
-              'price':
-                  (product['price_with_vat'] as num?) ??
+              'price': (product['price_with_vat'] as num?) ??
                   (product['price'] as num?) ??
                   0,
               'image_url': product['image_url'] as String?,
@@ -119,24 +121,23 @@ class _AccountingTabState extends State<AccountingTab>
           })
           .toList();
 
-      // 4. Сортируем по имени на клиенте
-      mappedItems.sort((a, b) {
-        final nameA = a['name'] as String;
-        final nameB = b['name'] as String;
-        return nameA.compareTo(nameB);
-      });
+      // Сортировка по имени
+      mappedItems.sort((a, b) => (a['name'] as String).compareTo(b['name'] as String));
 
-      setState(() {
-        stockItems = mappedItems;
-        isLoading = false;
-      });
-    } catch (e, stackTrace) {
-      print('Ошибка загрузки остатков: $e');
-      print(stackTrace);
-      setState(() {
-        errorMessage = 'Ошибка загрузки: $e';
-        isLoading = false;
-      });
+      if (mounted) {
+        setState(() {
+          stockItems = mappedItems;
+          isLoading = false;
+        });
+      }
+    } catch (e, stack) {
+      print('Ошибка загрузки остатков: $e\n$stack');
+      if (mounted) {
+        setState(() {
+          errorMessage = 'Не удалось загрузить склад: $e';
+          isLoading = false;
+        });
+      }
     }
   }
 
@@ -145,14 +146,12 @@ class _AccountingTabState extends State<AccountingTab>
 
     try {
       if (newQuantity <= 0) {
-        // Удаляем запись, если количество 0
         await supabase
             .from('store_stock')
             .delete()
             .eq('store_name', storeName!)
             .eq('product_id', productId);
       } else {
-        // upsert — если записи нет, создастся
         await supabase.from('store_stock').upsert({
           'store_name': storeName,
           'product_id': productId,
@@ -160,18 +159,21 @@ class _AccountingTabState extends State<AccountingTab>
         }, onConflict: 'store_name,product_id');
       }
 
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Количество обновлено'),
-          backgroundColor: Colors.green,
-        ),
-      );
-
-      _loadStock();
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Количество обновлено'),
+            backgroundColor: Colors.green,
+          ),
+        );
+        _loadStock();
+      }
     } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Ошибка: $e'), backgroundColor: Colors.red),
-      );
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Ошибка: $e'), backgroundColor: Colors.red),
+        );
+      }
     }
   }
 
@@ -182,13 +184,11 @@ class _AccountingTabState extends State<AccountingTab>
         title: const Text('Удалить товар?'),
         content: const Text('Это действие нельзя отменить.'),
         actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(ctx, false),
-            child: const Text('Отмена'),
-          ),
+          TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('Отмена')),
           TextButton(
             onPressed: () => Navigator.pop(ctx, true),
-            child: const Text('Удалить', style: TextStyle(color: Colors.red)),
+            style: TextButton.styleFrom(foregroundColor: Theme.of(context).colorScheme.error),
+            child: const Text('Удалить'),
           ),
         ],
       ),
@@ -203,18 +203,21 @@ class _AccountingTabState extends State<AccountingTab>
           .eq('store_name', storeName!)
           .eq('product_id', productId);
 
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Товар удалён со склада'),
-          backgroundColor: Colors.orange,
-        ),
-      );
-
-      _loadStock();
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Товар удалён со склада'),
+            backgroundColor: Colors.orange,
+          ),
+        );
+        _loadStock();
+      }
     } catch (e) {
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(SnackBar(content: Text('Ошибка удаления: $e')));
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Ошибка удаления: $e')),
+        );
+      }
     }
   }
 
@@ -226,14 +229,16 @@ class _AccountingTabState extends State<AccountingTab>
         onUpdate: (newQty) => _updateQuantity(item['product_id'], newQty),
         onDelete: () => _deleteProduct(item['product_id']),
       ),
-    );
+    ).then((_) => _loadStock());
   }
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
 
     return Scaffold(
+      backgroundColor: colorScheme.background,
       body: SafeArea(
         child: FadeTransition(
           opacity: _fadeAnimation,
@@ -242,98 +247,112 @@ class _AccountingTabState extends State<AccountingTab>
             child: isLoading
                 ? const Center(child: CircularProgressIndicator())
                 : errorMessage != null
-                ? Center(
-                    child: Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        Icon(
-                          Icons.error_outline,
-                          size: 80,
-                          color: theme.colorScheme.error,
+                    ? Center(
+                        child: Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Icon(
+                              Icons.error_outline_rounded,
+                              size: 80,
+                              color: colorScheme.error,
+                            ),
+                            const SizedBox(height: 24),
+                            Text(
+                              errorMessage!,
+                              style: theme.textTheme.titleLarge?.copyWith(
+                                color: colorScheme.onSurface,
+                              ),
+                              textAlign: TextAlign.center,
+                            ),
+                            const SizedBox(height: 16),
+                            OutlinedButton(
+                              onPressed: _loadStock,
+                              child: const Text('Повторить'),
+                            ),
+                          ],
                         ),
-                        const SizedBox(height: 24),
-                        Text(
-                          errorMessage!,
-                          style: const TextStyle(fontSize: 18),
-                        ),
-                      ],
-                    ),
-                  )
-                : stockItems.isEmpty
-                ? Center(
-                    child: Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        Icon(
-                          Icons.inventory_2_outlined,
-                          size: 100,
-                          color: Colors.grey[600],
-                        ),
-                        const SizedBox(height: 24),
-                        const Text(
-                          'На складе пусто',
-                          style: TextStyle(
-                            fontSize: 24,
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
-                        const SizedBox(height: 12),
-                        Text(
-                          'Товары появятся после приёмки поставок',
-                          style: TextStyle(
-                            fontSize: 16,
-                            color: Colors.grey[600],
-                          ),
-                        ),
-                      ],
-                    ),
-                  )
-                : Column(
-                    children: [
-                      Padding(
-                        padding: const EdgeInsets.all(16.0),
-                        child: Card(
-                          elevation: 4,
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(16),
-                          ),
-                          child: Padding(
-                            padding: const EdgeInsets.symmetric(vertical: 16),
-                            child: Row(
+                      )
+                    : stockItems.isEmpty
+                        ? Center(
+                            child: Column(
                               mainAxisAlignment: MainAxisAlignment.center,
                               children: [
                                 Icon(
-                                  Icons.store_outlined,
-                                  color: theme.colorScheme.primary,
-                                  size: 28,
+                                  Icons.inventory_2_outlined,
+                                  size: 100,
+                                  color: colorScheme.onSurfaceVariant.withOpacity(0.4),
                                 ),
-                                const SizedBox(width: 12),
+                                const SizedBox(height: 32),
                                 Text(
-                                  'Склад: $storeName',
-                                  style: theme.textTheme.titleLarge?.copyWith(
-                                    fontWeight: FontWeight.bold,
+                                  'Склад пуст',
+                                  style: theme.textTheme.headlineMedium?.copyWith(
+                                    fontWeight: FontWeight.w600,
                                   ),
+                                ),
+                                const SizedBox(height: 12),
+                                Text(
+                                  'Добавьте товары через приёмку поставок',
+                                  style: theme.textTheme.bodyLarge?.copyWith(
+                                    color: colorScheme.onSurfaceVariant,
+                                  ),
+                                  textAlign: TextAlign.center,
                                 ),
                               ],
                             ),
+                          )
+                        : Column(
+                            children: [
+                              // Карточка со складом
+                              Padding(
+                                padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
+                                child: Card(
+                                  elevation: 2,
+                                  shape: RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(20),
+                                  ),
+                                  color: colorScheme.surfaceContainerLow,
+                                  child: Padding(
+                                    padding: const EdgeInsets.symmetric(vertical: 20, horizontal: 16),
+                                    child: Row(
+                                      mainAxisAlignment: MainAxisAlignment.center,
+                                      children: [
+                                        Icon(
+                                          Icons.store_outlined,
+                                          color: colorScheme.primary,
+                                          size: 32,
+                                        ),
+                                        const SizedBox(width: 16),
+                                        Text(
+                                          'Склад: $storeName',
+                                          style: theme.textTheme.titleLarge?.copyWith(
+                                            fontWeight: FontWeight.w700,
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                ),
+                              ),
+
+                              Expanded(
+                                child: RefreshIndicator.adaptive(
+                                  onRefresh: _loadStock,
+                                  color: colorScheme.primary,
+                                  child: ListView.builder(
+                                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                                    itemCount: stockItems.length,
+                                    itemBuilder: (context, index) {
+                                      final item = stockItems[index];
+                                      return StockItemCard(
+                                        item: item,
+                                        onTap: () => _showProductDetails(item),
+                                      );
+                                    },
+                                  ),
+                                ),
+                              ),
+                            ],
                           ),
-                        ),
-                      ),
-                      Expanded(
-                        child: ListView.builder(
-                          padding: const EdgeInsets.symmetric(horizontal: 12),
-                          itemCount: stockItems.length,
-                          itemBuilder: (context, index) {
-                            final item = stockItems[index];
-                            return StockItemCard(
-                              item: item,
-                              onTap: () => _showProductDetails(item),
-                            );
-                          },
-                        ),
-                      ),
-                    ],
-                  ),
           ),
         ),
       ),

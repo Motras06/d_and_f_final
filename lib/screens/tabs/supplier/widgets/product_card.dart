@@ -134,7 +134,7 @@ class _ProductCardState extends State<ProductCard> with SingleTickerProviderStat
                             ),
                             const SizedBox(height: 6),
                             Text(
-                              '${widget.product.price} Руб • ${widget.product.country}',
+                              '${widget.product.price} BYN • ${widget.product.country}',
                               style: TextStyle(
                                 fontSize: 16,
                                 color: subtitleColor,

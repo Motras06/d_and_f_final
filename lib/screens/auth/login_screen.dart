@@ -1,3 +1,4 @@
+import 'package:d_and_f_final/screens/tabs/wholesale_warehouse/wholesale_warehouse_home.dart';
 import 'package:flutter/material.dart';
 import 'package:d_and_f_final/screens/auth/signup_screen.dart';
 
@@ -52,7 +53,7 @@ class _LoginScreenState extends State<LoginScreen>
     Widget homeScreen;
     switch (profile.role) {
       case 'supplier':
-        homeScreen = SupplierHome(profile: profile);
+        homeScreen = WholesaleWarehouseHome(profile: profile);
         break;
       case 'hall':
         homeScreen = HallHome(profile: profile);
@@ -64,7 +65,7 @@ class _LoginScreenState extends State<LoginScreen>
         homeScreen = AdminHome(profile: profile);
         break;
       default:
-        homeScreen = SupplierHome(profile: profile);
+        homeScreen = WholesaleWarehouseHome(profile: profile);
     }
 
     Navigator.of(context).pushAndRemoveUntil(

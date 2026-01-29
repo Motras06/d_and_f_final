@@ -1,9 +1,10 @@
+// lib/screens/admin/admin_home.dart
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:d_and_f_final/models/profile.dart';
 import 'package:d_and_f_final/services/auth_service.dart';
 import 'package:d_and_f_final/screens/auth/login_screen.dart';
-import 'record_form_dialog.dart'; // ← подключаем второй файл
+import 'record_form_dialog.dart';
 
 class AdminHome extends StatefulWidget {
   final Profile profile;
@@ -48,9 +49,10 @@ class _AdminHomeState extends State<AdminHome> with SingleTickerProviderStateMix
         content: const Text('Вы уверены?'),
         actions: [
           TextButton(onPressed: () => Navigator.pop(context, false), child: const Text('Отмена')),
-          TextButton(
+          FilledButton(
             onPressed: () => Navigator.pop(context, true),
-            child: const Text('Выйти', style: TextStyle(color: Colors.red)),
+            style: FilledButton.styleFrom(backgroundColor: Theme.of(context).colorScheme.error),
+            child: const Text('Выйти'),
           ),
         ],
       ),
@@ -67,16 +69,38 @@ class _AdminHomeState extends State<AdminHome> with SingleTickerProviderStateMix
     }
   }
 
+  static String formatTableName(String name) {
+    final map = {
+      'profiles': 'Пользователи',
+      'stores': 'Магазины',
+      'store_assignments': 'Привязки магазинов',
+      'products': 'Товары',
+      'suppliers': 'Поставщики',
+      'deliveries': 'Доставки',
+      'delivery_items': 'Позиции доставок',
+      'store_stock': 'Остатки на складе',
+    };
+    return map[name] ?? name.split('_').map((w) => w[0].toUpperCase() + w.substring(1)).join(' ');
+  }
+
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
 
     return Scaffold(
+      backgroundColor: colorScheme.background,
       appBar: AppBar(
         title: const Text('Админ-панель D&F'),
+        centerTitle: true,
+        elevation: 0,
+        scrolledUnderElevation: 2,
+        backgroundColor: colorScheme.surfaceContainerLow,
+        foregroundColor: colorScheme.onSurface,
+        surfaceTintColor: Colors.transparent,
         actions: [
           IconButton(
-            icon: const Icon(Icons.logout),
+            icon: const Icon(Icons.logout_rounded),
             tooltip: 'Выйти',
             onPressed: () => _logout(context),
           ),
@@ -84,7 +108,10 @@ class _AdminHomeState extends State<AdminHome> with SingleTickerProviderStateMix
         bottom: TabBar(
           controller: _tabController,
           isScrollable: true,
-          tabs: tables.map((table) => Tab(text: _formatTableName(table))).toList(),
+          indicatorColor: colorScheme.primary,
+          labelColor: colorScheme.primary,
+          unselectedLabelColor: colorScheme.onSurfaceVariant,
+          tabs: tables.map((table) => Tab(text: formatTableName(table))).toList(),
         ),
       ),
       body: TabBarView(
@@ -93,15 +120,9 @@ class _AdminHomeState extends State<AdminHome> with SingleTickerProviderStateMix
       ),
     );
   }
-
-  String _formatTableName(String name) {
-    return name
-        .split('_')
-        .map((word) => word[0].toUpperCase() + word.substring(1))
-        .join(' ');
-  }
 }
 
+// ------------------ Вкладка с таблицей ------------------
 class _TableManagementView extends StatefulWidget {
   final String tableName;
   const _TableManagementView({required this.tableName});
@@ -122,22 +143,41 @@ class _TableManagementViewState extends State<_TableManagementView> {
   }
 
   Future<void> loadRecords() async {
+    if (!mounted) return;
+
     setState(() {
       loading = true;
       error = null;
     });
 
     try {
-      final response = await Supabase.instance.client.from(widget.tableName).select();
-      setState(() {
-        records = List<Map<String, dynamic>>.from(response);
-        loading = false;
-      });
-    } catch (e) {
-      setState(() {
-        error = e.toString();
-        loading = false;
-      });
+      // Используем var — это решает проблему типов
+      PostgrestTransformBuilder<PostgrestList> query = Supabase.instance.client.from(widget.tableName).select();
+
+      // Сортировка только для таблиц, где точно есть id
+      if (widget.tableName != 'store_assignments' && widget.tableName != 'store_stock') {
+        query = query.order('id', ascending: false);
+      }
+      // Для store_assignments и store_stock — без сортировки по id (нет такой колонки)
+
+      final response = await query;
+
+      if (mounted) {
+        setState(() {
+          records = List<Map<String, dynamic>>.from(response);
+          loading = false;
+        });
+      }
+    } catch (e, stack) {
+      debugPrint('Ошибка загрузки таблицы ${widget.tableName}: $e');
+      debugPrint('$stack');
+
+      if (mounted) {
+        setState(() {
+          error = e.toString();
+          loading = false;
+        });
+      }
     }
   }
 
@@ -147,16 +187,24 @@ class _TableManagementViewState extends State<_TableManagementView> {
       builder: (context) => RecordFormDialog(tableName: widget.tableName, isEdit: false),
     );
 
-    if (result != null) {
+    if (result != null && mounted) {
       try {
         await Supabase.instance.client.from(widget.tableName).insert(result);
         loadRecords();
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Запись добавлена'), backgroundColor: Colors.green),
+          SnackBar(
+            content: const Text('Запись успешно добавлена'),
+            backgroundColor: Colors.green,
+            behavior: SnackBarBehavior.floating,
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+          ),
         );
       } catch (e) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Ошибка добавления: $e'), backgroundColor: Colors.red),
+          SnackBar(
+            content: Text('Ошибка добавления: $e'),
+            backgroundColor: Theme.of(context).colorScheme.error,
+          ),
         );
       }
     }
@@ -172,7 +220,7 @@ class _TableManagementViewState extends State<_TableManagementView> {
       ),
     );
 
-    if (result != null) {
+    if (result != null && mounted) {
       try {
         final idColumn = _getIdColumn(widget.tableName);
         await Supabase.instance.client
@@ -181,11 +229,19 @@ class _TableManagementViewState extends State<_TableManagementView> {
             .eq(idColumn, record[idColumn]);
         loadRecords();
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Запись обновлена'), backgroundColor: Colors.green),
+          SnackBar(
+            content: const Text('Запись обновлена'),
+            backgroundColor: Colors.green,
+            behavior: SnackBarBehavior.floating,
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+          ),
         );
       } catch (e) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Ошибка обновления: $e'), backgroundColor: Colors.red),
+          SnackBar(
+            content: Text('Ошибка обновления: $e'),
+            backgroundColor: Theme.of(context).colorScheme.error,
+          ),
         );
       }
     }
@@ -199,15 +255,16 @@ class _TableManagementViewState extends State<_TableManagementView> {
         content: const Text('Это действие нельзя отменить.'),
         actions: [
           TextButton(onPressed: () => Navigator.pop(context, false), child: const Text('Отмена')),
-          TextButton(
+          FilledButton(
             onPressed: () => Navigator.pop(context, true),
-            child: const Text('Удалить', style: TextStyle(color: Colors.red)),
+            style: FilledButton.styleFrom(backgroundColor: Theme.of(context).colorScheme.error),
+            child: const Text('Удалить'),
           ),
         ],
       ),
     );
 
-    if (confirm == true) {
+    if (confirm == true && mounted) {
       try {
         final idColumn = _getIdColumn(widget.tableName);
         await Supabase.instance.client
@@ -216,11 +273,16 @@ class _TableManagementViewState extends State<_TableManagementView> {
             .eq(idColumn, record[idColumn]);
         loadRecords();
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Запись удалена'), backgroundColor: Colors.orange),
+          SnackBar(
+            content: const Text('Запись удалена'),
+            backgroundColor: Colors.orange,
+            behavior: SnackBarBehavior.floating,
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+          ),
         );
       } catch (e) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Ошибка удаления: $e'), backgroundColor: Colors.red),
+          SnackBar(content: Text('Ошибка удаления: $e')),
         );
       }
     }
@@ -230,15 +292,15 @@ class _TableManagementViewState extends State<_TableManagementView> {
     switch (table) {
       case 'profiles':
       case 'suppliers':
-        return 'id';
       case 'products':
       case 'stores':
       case 'deliveries':
       case 'delivery_items':
-      case 'store_stock':
         return 'id';
       case 'store_assignments':
-        return 'user_id';
+        return 'user_id'; // композитный ключ, но для delete/update используем user_id
+      case 'store_stock':
+        return 'product_id'; // или store_name — зависит от логики
       default:
         return 'id';
     }
@@ -267,54 +329,99 @@ class _TableManagementViewState extends State<_TableManagementView> {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
 
     return Scaffold(
-      floatingActionButton: FloatingActionButton(
+      floatingActionButton: FloatingActionButton.extended(
         onPressed: _addRecord,
-        child: const Icon(Icons.add),
-        tooltip: 'Добавить запись',
+        icon: const Icon(Icons.add_rounded),
+        label: const Text('Добавить запись'),
+        backgroundColor: colorScheme.primary,
+        foregroundColor: colorScheme.onPrimary,
+        elevation: 6,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
       ),
       body: loading
-          ? const Center(child: CircularProgressIndicator())
+          ? Center(child: CircularProgressIndicator(color: colorScheme.primary))
           : error != null
-              ? Center(child: Text('Ошибка: $error', style: const TextStyle(color: Colors.red)))
+              ? Center(
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Icon(Icons.error_outline_rounded, size: 80, color: colorScheme.error),
+                      const SizedBox(height: 24),
+                      Text('Ошибка: $error', style: theme.textTheme.titleLarge, textAlign: TextAlign.center),
+                      const SizedBox(height: 16),
+                      OutlinedButton(
+                        onPressed: loadRecords,
+                        child: const Text('Повторить'),
+                      ),
+                    ],
+                  ),
+                )
               : records.isEmpty
-                  ? const Center(child: Text('Нет записей в таблице'))
-                  : ListView.builder(
-                      padding: const EdgeInsets.all(16),
-                      itemCount: records.length,
-                      itemBuilder: (context, index) {
-                        final record = records[index];
-                        return Card(
-                          margin: const EdgeInsets.only(bottom: 12),
-                          child: ListTile(
-                            title: Text(
-                              _formatValue(record.values.first),
-                              style: const TextStyle(fontWeight: FontWeight.bold),
-                            ),
-                            subtitle: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: record.entries
-                                  .skip(1)
-                                  .map((e) => Text('${e.key}: ${_formatValue(e.value)}'))
-                                  .toList(),
-                            ),
-                            trailing: Row(
-                              mainAxisSize: MainAxisSize.min,
-                              children: [
-                                IconButton(
-                                  icon: const Icon(Icons.edit, color: Colors.blue),
-                                  onPressed: () => _editRecord(record),
-                                ),
-                                IconButton(
-                                  icon: const Icon(Icons.delete, color: Colors.red),
-                                  onPressed: () => _deleteRecord(record),
-                                ),
-                              ],
-                            ),
+                  ? Center(
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Icon(Icons.table_rows_outlined, size: 80, color: colorScheme.onSurfaceVariant.withOpacity(0.4)),
+                          const SizedBox(height: 24),
+                          Text(
+                            'Нет записей в таблице «${_AdminHomeState.formatTableName(widget.tableName)}»',
+                            style: theme.textTheme.titleLarge,
+                            textAlign: TextAlign.center,
                           ),
-                        );
-                      },
+                        ],
+                      ),
+                    )
+                  : RefreshIndicator.adaptive(
+                      onRefresh: loadRecords,
+                      color: colorScheme.primary,
+                      child: ListView.builder(
+                        padding: const EdgeInsets.all(16),
+                        itemCount: records.length,
+                        itemBuilder: (context, index) {
+                          final record = records[index];
+                          return Card(
+                            margin: const EdgeInsets.only(bottom: 12),
+                            elevation: 1,
+                            shadowColor: colorScheme.shadow.withOpacity(0.12),
+                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+                            color: colorScheme.surfaceContainerLowest,
+                            child: ListTile(
+                              title: Text(
+                                _formatValue(record.values.first),
+                                style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w600),
+                              ),
+                              subtitle: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: record.entries.skip(1).map((e) => Padding(
+                                  padding: const EdgeInsets.symmetric(vertical: 4),
+                                  child: Text(
+                                    '${e.key.replaceAll('_', ' ').toUpperCase()}: ${_formatValue(e.value)}',
+                                    style: theme.textTheme.bodyMedium?.copyWith(
+                                      color: colorScheme.onSurfaceVariant,
+                                    ),
+                                  ),
+                                )).toList(),
+                              ),
+                              trailing: Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  IconButton(
+                                    icon: Icon(Icons.edit_rounded, color: colorScheme.primary),
+                                    onPressed: () => _editRecord(record),
+                                  ),
+                                  IconButton(
+                                    icon: Icon(Icons.delete_rounded, color: colorScheme.error),
+                                    onPressed: () => _deleteRecord(record),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          );
+                        },
+                      ),
                     ),
     );
   }

@@ -148,7 +148,7 @@ class _DeliveryProductCardState extends State<DeliveryProductCard> with SingleTi
                             ),
                             const SizedBox(height: 8),
                             Text(
-                              'Цена: ${widget.product.price} Руб',
+                              'Цена: ${widget.product.price} BYN',
                               style: TextStyle(
                                 fontSize: 16,
                                 color: subtitleColor,

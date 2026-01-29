@@ -1,12 +1,14 @@
+// lib/screens/tabs/wholesale_warehouse/stock_availability_tab.dart
 import 'dart:io';
 import 'package:d_and_f_final/models/stock_item.dart';
-import 'package:flutter/material.dart';
 import 'package:d_and_f_final/models/profile.dart';
 import '/services/stock_service.dart';
 import 'widgets/stock_item_card.dart';
 import 'widgets/stock_item_dialog.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:open_filex/open_filex.dart';
+import 'package:syncfusion_flutter_pdf/pdf.dart';
+import 'package:flutter/material.dart';
 
 class StockAvailabilityTab extends StatefulWidget {
   final Profile profile;
@@ -144,81 +146,177 @@ class _StockAvailabilityTabState extends State<StockAvailabilityTab>
   }
 
   void showProductDetails(StockItem stockItem) {
-  // Костыль: преобразуем StockItem в Map
-  final itemMap = {
-    'product_id': stockItem.productId,
-    'name': stockItem.name,
-    'country': stockItem.country,
-    'price': stockItem.price,
-    'quantity': stockItem.quantity,
-    'image_url': stockItem.imageUrl,
-    'about': stockItem.about,
-    // если есть другие поля — добавь их сюда
-  };
+    // Костыль: преобразуем StockItem в Map
+    final itemMap = {
+      'product_id': stockItem.productId,
+      'name': stockItem.name,
+      'country': stockItem.country,
+      'price': stockItem.price,
+      'quantity': stockItem.quantity,
+      'image_url': stockItem.imageUrl,
+      'about': stockItem.about,
+      // если есть другие поля — добавь их сюда
+    };
 
-  showDialog(
-    context: context,
-    builder: (context) => StockItemDialog(
-      item: itemMap,
-      onUpdate: (newQty) => updateQuantity(stockItem.productId, newQty),
-      onDelete: () => deleteProduct(stockItem.productId),
-    ),
-  );
-}
+    showDialog(
+      context: context,
+      builder: (context) => StockItemDialog(
+        item: itemMap,
+        onUpdate: (newQty) => updateQuantity(stockItem.productId, newQty),
+        onDelete: () => deleteProduct(stockItem.productId),
+      ),
+    );
+  }
 
-  // НОВЫЙ МЕТОД: Экспорт ВСЕГО склада в CSV
+  // Улучшенный экспорт в CSV: красивее таблица с суммами и итогом
   Future<void> _exportFullStockToCsv() async {
     if (stockItems.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('На складе нет товаров для экспорта')),
-      );
+      _showSnack('На складе нет товаров для экспорта');
       return;
     }
 
     try {
-      // Формируем CSV
+      // Формируем CSV с красивой таблицей
       final List<List<String>> csvData = [
-        ['№', 'Товар', 'Количество', 'Ед. изм.', 'Цена с НДС (₽)', 'Сумма (₽)'],
+        ['#', 'Product', 'Country', 'Price (BYN)', 'Quantity', 'Unit', 'Total (BYN)']
       ];
 
       double totalValue = 0;
 
       for (int i = 0; i < stockItems.length; i++) {
         final item = stockItems[i];
-        final sum = item.quantity * (item.price);
+        final sum = item.quantity * item.price;
         totalValue += sum;
 
         csvData.add([
           '${i + 1}',
           item.name,
+          item.country,
+          item.price.toStringAsFixed(2),
           item.quantity.toString(),
-          'шт',
-          (item.price).toStringAsFixed(2),
+          'шт',  // или item.unit_of_measure, если есть
           sum.toStringAsFixed(2),
         ]);
       }
 
-      csvData.add([]); // пустая строка
-      csvData.add(['Итого по складу:', '', '', '', '', totalValue.toStringAsFixed(2)]);
+      // Пустая строка + Итог
+      csvData.add(['', '', '', '', '', '', '']);
+      csvData.add(['Итого:', '', '', '', '', '', totalValue.toStringAsFixed(2)]);
 
       final csvString = csvData.map((row) => row.join(';')).join('\n');
 
-      // Сохраняем файл
+      // Сохранение файла
       final directory = await getTemporaryDirectory();
       final path = '${directory.path}/остатки_склада_${DateTime.now().toIso8601String().substring(0, 10)}.csv';
       final file = File(path);
-      await file.writeAsString('sep=;\n$csvString'); // sep=; для корректного открытия в Excel RU
+      await file.writeAsString('sep=;\n$csvString');  // sep=; для Excel RU
 
-      // Открываем файл (Excel / Sheets предложит открыть и распечатать)
+      // Открытие файла
       final result = await OpenFilex.open(path);
 
       if (result.type != ResultType.done) {
         _showSnack('Не удалось открыть файл: ${result.message}', isError: true);
       } else {
-        _showSnack('Файл открыт! Распечатайте из Excel / Google Sheets', isSuccess: true);
+        _showSnack('CSV открыт! Распечатайте из Excel', isSuccess: true);
       }
     } catch (e) {
-      _showSnack('Ошибка экспорта: $e', isError: true);
+      _showSnack('Ошибка экспорта CSV: $e', isError: true);
+    }
+  }
+
+  // НОВЫЙ: Экспорт в PDF с красивой таблицей (открывает PDF, который можно импортировать/печатать)
+  Future<void> _exportFullStockToPdf() async {
+    if (stockItems.isEmpty) {
+      _showSnack('На складе нет товаров для экспорта');
+      return;
+    }
+
+    try {
+      // Создаём PDF
+      final pdf = PdfDocument();
+      final page = pdf.pages.add();
+
+      // Шрифт (используй DejaVuSans для кириллицы, как раньше)
+      final fontData = await DefaultAssetBundle.of(context).load('assets/fonts/DejaVuSans.ttf');
+      final fontBytes = fontData.buffer.asUint8List();
+      final ttf = PdfTrueTypeFont(fontBytes, 12);
+      final boldTtf = PdfTrueTypeFont(fontBytes, 12, style: PdfFontStyle.bold);
+
+      // Заголовок
+      page.graphics.drawString(
+        'Остатки склада: $storeName',
+        boldTtf,
+        bounds: const Rect.fromLTWH(0, 0, 500, 50),
+      );
+
+      // Таблица
+      final grid = PdfGrid();
+      grid.columns.add(count: 7);
+
+      // Заголовки
+      final headerRow = grid.headers.add(1)[0];
+      headerRow.cells[0].value = '№';
+      headerRow.cells[1].value = 'Товар';
+      headerRow.cells[2].value = 'Страна';
+      headerRow.cells[3].value = 'Цена (BYN)';
+      headerRow.cells[4].value = 'Количество';
+      headerRow.cells[5].value = 'Ед. изм.';
+      headerRow.cells[6].value = 'Сумма (BYN)';
+
+      // Стили заголовков
+      headerRow.style.font = boldTtf;
+      headerRow.style.backgroundBrush = PdfSolidBrush(PdfColor(200, 200, 200));
+
+      double totalValue = 0;
+
+      for (int i = 0; i < stockItems.length; i++) {
+        final item = stockItems[i];
+        final sum = item.quantity * item.price;
+        totalValue += sum;
+
+        final row = grid.rows.add();
+        row.cells[0].value = '${i + 1}';
+        row.cells[1].value = item.name;
+        row.cells[2].value = item.country;
+        row.cells[3].value = item.price.toStringAsFixed(2);
+        row.cells[4].value = item.quantity.toString();
+        row.cells[5].value = 'шт';  // или item.unit_of_measure, если есть
+        row.cells[6].value = sum.toStringAsFixed(2);
+      }
+
+      // Итоговая строка
+      final totalRow = grid.rows.add();
+      totalRow.cells[0].value = 'Итого:';
+      totalRow.cells[6].value = totalValue.toStringAsFixed(2);
+      totalRow.style.font = boldTtf;
+      totalRow.style.backgroundBrush = PdfSolidBrush(PdfColor(220, 220, 220));
+
+      // Стили таблицы
+      grid.style.cellPadding = PdfPaddings(left: 5, top: 5, right: 5, bottom: 5);
+      grid.style.font = ttf;
+
+      // Рисуем таблицу на странице
+      grid.draw(page: page, bounds: Rect.fromLTWH(0, 80, page.getClientSize().width, page.getClientSize().height - 80));
+
+      // Сохранение PDF
+      final bytes = await pdf.save();
+      pdf.dispose();
+
+      final directory = await getTemporaryDirectory();
+      final path = '${directory.path}/остатки_склада_${DateTime.now().toIso8601String().substring(0, 10)}.pdf';
+      final file = File(path);
+      await file.writeAsBytes(bytes);
+
+      // Открытие PDF (можно импортировать/печатать из просмотрщика)
+      final result = await OpenFilex.open(path);
+
+      if (result.type != ResultType.done) {
+        _showSnack('Не удалось открыть PDF: ${result.message}', isError: true);
+      } else {
+        _showSnack('PDF открыт! Распечатайте или импортируйте', isSuccess: true);
+      }
+    } catch (e) {
+      _showSnack('Ошибка экспорта PDF: $e', isError: true);
     }
   }
 
@@ -236,37 +334,84 @@ class _StockAvailabilityTabState extends State<StockAvailabilityTab>
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final isDark = theme.brightness == Brightness.dark;
-    final backgroundColor = isDark ? Colors.grey[900] : Colors.blue[50];
+    final colorScheme = theme.colorScheme;
 
     return Scaffold(
-      backgroundColor: backgroundColor,
-      floatingActionButtonLocation: FloatingActionButtonLocation.centerFloat,
-      floatingActionButton: Padding(
-        padding: const EdgeInsets.only(bottom: 80), // отступ от bottom nav
-        child: FloatingActionButton.extended(
-          onPressed: stockItems.isEmpty ? null : _exportFullStockToCsv,
-          icon: const Icon(Icons.table_chart),
-          label: const Text('Экспорт всего склада в CSV (Excel)'),
-          backgroundColor: Colors.green[700],
-          foregroundColor: Colors.white,
+      backgroundColor: colorScheme.background,
+      appBar: AppBar(
+        title: const Text('Остатки склада'),
+        centerTitle: true,
+        elevation: 0,
+        scrolledUnderElevation: 2,
+        backgroundColor: colorScheme.surfaceContainerLow,
+        foregroundColor: colorScheme.onSurface,
+        surfaceTintColor: Colors.transparent,
+        bottom: PreferredSize(
+          preferredSize: const Size.fromHeight(1),
+          child: Container(
+            height: 1,
+            color: colorScheme.outlineVariant.withOpacity(0.6),
+          ),
         ),
       ),
+      floatingActionButtonLocation: FloatingActionButtonLocation.centerFloat,
+      floatingActionButton: stockItems.isEmpty
+          ? null
+          : Padding(
+              padding: EdgeInsets.only(bottom: 80 + MediaQuery.of(context).padding.bottom),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  FilledButton.icon(
+                    onPressed: _exportFullStockToCsv,
+                    icon: const Icon(Icons.table_chart_rounded),
+                    label: const Text('Экспорт CSV'),
+                    style: FilledButton.styleFrom(
+                      backgroundColor: colorScheme.primary,
+                      foregroundColor: colorScheme.onPrimary,
+                      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                      elevation: 4,
+                      shadowColor: colorScheme.primary.withOpacity(0.4),
+                    ),
+                  ),
+                  const SizedBox(width: 16),
+                  FilledButton.icon(
+                    onPressed: _exportFullStockToPdf,
+                    icon: const Icon(Icons.picture_as_pdf_rounded),
+                    label: const Text('Экспорт PDF'),
+                    style: FilledButton.styleFrom(
+                      backgroundColor: colorScheme.secondary,
+                      foregroundColor: colorScheme.onSecondary,
+                      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                      elevation: 4,
+                      shadowColor: colorScheme.secondary.withOpacity(0.4),
+                    ),
+                  ),
+                ],
+              ),
+            ),
       body: SafeArea(
         child: FadeTransition(
           opacity: _fadeAnimation,
           child: SlideTransition(
             position: _slideAnimation,
             child: isLoading
-                ? Center(child: CircularProgressIndicator(color: theme.colorScheme.primary))
+                ? Center(child: CircularProgressIndicator(color: colorScheme.primary))
                 : errorMessage != null
                     ? Center(
                         child: Column(
                           mainAxisAlignment: MainAxisAlignment.center,
                           children: [
-                            Icon(Icons.error_outline, size: 80, color: theme.colorScheme.error),
+                            Icon(Icons.error_outline_rounded, size: 80, color: colorScheme.error),
                             const SizedBox(height: 24),
-                            Text(errorMessage!, style: const TextStyle(fontSize: 18)),
+                            Text(errorMessage!, style: theme.textTheme.titleLarge, textAlign: TextAlign.center),
+                            const SizedBox(height: 16),
+                            OutlinedButton(
+                              onPressed: loadStock,
+                              child: const Text('Повторить'),
+                            ),
                           ],
                         ),
                       )
@@ -275,16 +420,17 @@ class _StockAvailabilityTabState extends State<StockAvailabilityTab>
                             child: Column(
                               mainAxisAlignment: MainAxisAlignment.center,
                               children: [
-                                Icon(Icons.inventory_2_outlined, size: 100, color: Colors.grey[600]),
-                                const SizedBox(height: 24),
-                                const Text(
+                                Icon(Icons.inventory_2_outlined, size: 100, color: colorScheme.onSurfaceVariant.withOpacity(0.4)),
+                                const SizedBox(height: 32),
+                                Text(
                                   'На складе пусто',
-                                  style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
+                                  style: theme.textTheme.headlineMedium?.copyWith(fontWeight: FontWeight.w600),
                                 ),
                                 const SizedBox(height: 12),
                                 Text(
                                   'Товары появятся после приёмки поставок',
-                                  style: TextStyle(fontSize: 16, color: Colors.grey[600]),
+                                  style: theme.textTheme.bodyLarge?.copyWith(color: colorScheme.onSurfaceVariant),
+                                  textAlign: TextAlign.center,
                                 ),
                               ],
                             ),
@@ -292,21 +438,21 @@ class _StockAvailabilityTabState extends State<StockAvailabilityTab>
                         : Column(
                             children: [
                               Padding(
-                                padding: const EdgeInsets.all(20.0),
+                                padding: const EdgeInsets.all(16.0),
                                 child: Card(
-                                  elevation: 6,
-                                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
-                                  color: theme.cardColor,
+                                  elevation: 2,
+                                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+                                  color: colorScheme.surfaceContainerLow,
                                   child: Padding(
-                                    padding: const EdgeInsets.symmetric(vertical: 20),
+                                    padding: const EdgeInsets.symmetric(vertical: 20, horizontal: 16),
                                     child: Row(
                                       mainAxisAlignment: MainAxisAlignment.center,
                                       children: [
-                                        Icon(Icons.storage_outlined, size: 32, color: theme.colorScheme.primary),
+                                        Icon(Icons.store_outlined, color: colorScheme.primary, size: 32),
                                         const SizedBox(width: 16),
                                         Text(
                                           'Склад: $storeName',
-                                          style: theme.textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold),
+                                          style: theme.textTheme.titleLarge?.copyWith(fontWeight: FontWeight.w700),
                                         ),
                                       ],
                                     ),
@@ -314,16 +460,20 @@ class _StockAvailabilityTabState extends State<StockAvailabilityTab>
                                 ),
                               ),
                               Expanded(
-                                child: ListView.builder(
-                                  padding: const EdgeInsets.symmetric(horizontal: 16),
-                                  itemCount: stockItems.length,
-                                  itemBuilder: (context, index) {
-                                    final item = stockItems[index];
-                                    return StockItemCard(
-                                      item: item,
-                                      onTap: () => showProductDetails(item),
-                                    );
-                                  },
+                                child: RefreshIndicator.adaptive(
+                                  onRefresh: loadStock,
+                                  color: colorScheme.primary,
+                                  child: ListView.builder(
+                                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                                    itemCount: stockItems.length,
+                                    itemBuilder: (context, index) {
+                                      final item = stockItems[index];
+                                      return StockItemCard(
+                                        item: item,
+                                        onTap: () => showProductDetails(item),
+                                      );
+                                    },
+                                  ),
                                 ),
                               ),
                             ],

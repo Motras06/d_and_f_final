@@ -244,10 +244,10 @@ class _ProductsTabState extends State<ProductsTab>
         'QR-код товара\n\n'
         'Название: $name\n'
         'Страна: $country\n'
-        'Цена без НДС: $price ₽\n'
-        'Цена с НДС: $priceWithVat ₽\n'
+        'Цена без НДС: $price BYN\n'
+        'Цена с НДС: $priceWithVat BYN\n'
         'Ставка НДС: $vatRate%\n'
-        'Сумма НДС: $vatAmount ₽\n'
+        'Сумма НДС: $vatAmount BYN\n'
         'Остаток: $qty $unit\n'
         'Описание: ${about ?? '—'}\n'
         'Дата добавления: $createdAt\n'
@@ -344,10 +344,10 @@ class _ProductsTabState extends State<ProductsTab>
                         ),
                         const SizedBox(height: 12),
                         _infoRow(Icons.flag_outlined, 'Страна', country),
-                        _infoRow(Icons.monetization_on_outlined, 'Цена без НДС', '$price ₽'),
-                        _infoRow(Icons.price_check, 'Цена с НДС', '$priceWithVat ₽'),
+                        _infoRow(Icons.monetization_on_outlined, 'Цена без НДС', '$price BYN'),
+                        _infoRow(Icons.price_check, 'Цена с НДС', '$priceWithVat BYN'),
                         _infoRow(Icons.percent, 'Ставка НДС', '$vatRate%'),
-                        _infoRow(Icons.attach_money, 'Сумма НДС', '$vatAmount ₽'),
+                        _infoRow(Icons.attach_money, 'Сумма НДС', '$vatAmount BYN'),
                         _infoRow(Icons.straighten, 'Ед. измерения', unit),
                         _infoRow(Icons.calendar_today_outlined, 'Добавлен', createdAt),
                         _infoRow(Icons.inventory_2_outlined, 'В наличии', '$qty шт.'),

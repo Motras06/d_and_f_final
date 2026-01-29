@@ -82,7 +82,7 @@ class _ProductFilterDialogState extends State<ProductFilterDialog> {
               keyboardType: TextInputType.number,
               decoration: const InputDecoration(
                 hintText: 'Например: 100',
-                suffixText: 'Руб',
+                suffixText: 'BYN',
                 border: OutlineInputBorder(),
               ),
               controller: TextEditingController(text: _minPrice?.toStringAsFixed(0) ?? ''),
@@ -99,7 +99,7 @@ class _ProductFilterDialogState extends State<ProductFilterDialog> {
               keyboardType: TextInputType.number,
               decoration: const InputDecoration(
                 hintText: 'Например: 5000',
-                suffixText: 'Руб',
+                suffixText: 'BYN',
                 border: OutlineInputBorder(),
               ),
               controller: TextEditingController(text: _maxPrice?.toStringAsFixed(0) ?? ''),

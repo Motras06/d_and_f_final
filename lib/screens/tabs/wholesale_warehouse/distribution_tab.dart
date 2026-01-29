@@ -1,3 +1,4 @@
+// lib/screens/tabs/wholesale_warehouse/distribution_tab.dart
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
@@ -8,7 +9,8 @@ class DistributionTab extends StatefulWidget {
   State<DistributionTab> createState() => _DistributionTabState();
 }
 
-class _DistributionTabState extends State<DistributionTab> {
+class _DistributionTabState extends State<DistributionTab>
+    with SingleTickerProviderStateMixin {
   final supabase = Supabase.instance.client;
 
   String? myStoreName;
@@ -21,10 +23,47 @@ class _DistributionTabState extends State<DistributionTab> {
   bool isSending = false;
   String? errorMessage;
 
+  late AnimationController _animController;
+  late Animation<double> _fadeAnimation;
+  late Animation<Offset> _slideAnimation;
+
   @override
   void initState() {
     super.initState();
     _loadData();
+
+    _animController = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 600),
+    );
+
+    _fadeAnimation = CurvedAnimation(
+      parent: _animController,
+      curve: Curves.easeOutCubic,
+    );
+
+    _slideAnimation =
+        Tween<Offset>(begin: const Offset(0, 0.25), end: Offset.zero).animate(
+          CurvedAnimation(parent: _animController, curve: Curves.easeOutCubic),
+        );
+
+    Future.delayed(const Duration(milliseconds: 200), () {
+      if (mounted) _animController.forward();
+    });
+  }
+
+  @override
+  void dispose() {
+    _animController.dispose();
+    super.dispose();
+  }
+
+  // Метод для форматирования цены с BYN
+  String _getPriceText(num? price) {
+    if (price == null || price <= 0) {
+      return 'По договорённости';
+    }
+    return '${price.toStringAsFixed(0)} BYN';
   }
 
   Future<void> _loadData() async {
@@ -50,9 +89,11 @@ class _DistributionTabState extends State<DistributionTab> {
       }
       myStoreName = myAssignment['store_name'] as String;
 
-      // Свободные магазины (без supplier)
+      // Доступные магазины (без supplier)
       final allStoresRes = await supabase.from('stores').select('name');
-      final allStoreNames = (allStoresRes as List).map((s) => s['name'] as String).toSet();
+      final allStoreNames = (allStoresRes as List)
+          .map((s) => s['name'] as String)
+          .toSet();
 
       final supplierUsers = await supabase
           .from('profiles')
@@ -66,7 +107,9 @@ class _DistributionTabState extends State<DistributionTab> {
           .select('store_name')
           .inFilter('user_id', supplierIds);
 
-      final supplierStores = supplierAssignments.map((a) => a['store_name'] as String).toSet();
+      final supplierStores = supplierAssignments
+          .map((a) => a['store_name'] as String)
+          .toSet();
 
       final freeStores = allStoreNames.difference(supplierStores).toList();
 
@@ -74,58 +117,107 @@ class _DistributionTabState extends State<DistributionTab> {
 
       // Мой склад
       await _loadMyStock();
-    } catch (e) {
+    } catch (e, stack) {
+      print('Ошибка загрузки: $e\n$stack');
       setState(() {
-        errorMessage = 'Ошибка загрузки: $e';
+        errorMessage = 'Не удалось загрузить данные: $e';
+        isLoading = false;
       });
-    } finally {
-      setState(() => isLoading = false);
     }
   }
 
   Future<void> _loadMyStock() async {
-    if (myStoreName == null) return;
-
-    try {
-      final response = await supabase
-          .from('store_stock')
-          .select('''
-            product_id,
-            quantity,
-            products!inner (
-              id,
-              name,
-              price_with_vat,
-              image_url,
-              unit_of_measure
-            )
-          ''')
-          .eq('store_name', myStoreName!)
-          .gt('quantity', 0);
-
-      final List<dynamic> data = response;
-
+  // Если магазин не загружен — выходим сразу
+  if (myStoreName == null) {
+    if (mounted) {
       setState(() {
-        myStock = data.map((row) {
-          final product = row['products'] as Map<String, dynamic>? ?? {};
-          return {
-            'product_id': row['product_id'],
-            'quantity': row['quantity'],
-            'name': product['name'] ?? 'Без названия',
-            'price': product['price_with_vat'] ?? product['price'] ?? 0,
-            'image_url': product['image_url'],
-            'unit': product['unit_of_measure'] ?? 'шт',
-          };
-        }).toList();
+        errorMessage = 'Магазин не найден';
+        isLoading = false;
       });
-    } catch (e) {
-      _showSnack('Ошибка загрузки склада: $e', isError: true);
+    }
+    return;
+  }
+
+  // Устанавливаем loading (это безопасно, т.к. вызывается синхронно)
+  if (mounted) {
+    setState(() {
+      isLoading = true;
+      errorMessage = null;
+    });
+  }
+
+  try {
+    print('Загрузка склада для магазина: $myStoreName');
+
+    final response = await supabase
+        .from('store_stock')
+        .select('''
+          product_id,
+          quantity,
+          products!inner (
+            id,
+            name,
+            price_with_vat,
+            image_url,
+            unit_of_measure
+          )
+        ''')
+        .eq('store_name', myStoreName!)
+        .gt('quantity', 0);
+
+    // Если виджет уже закрыт — выходим
+    if (!mounted) {
+      print('Виджет dispose во время загрузки склада — выходим');
+      return;
+    }
+
+    final List<dynamic> data = response;
+
+    final mappedStock = data.map((row) {
+      final product = row['products'] as Map<String, dynamic>? ?? {};
+      return {
+        'product_id': row['product_id'] as int? ?? 0,
+        'quantity': row['quantity'] as int? ?? 0,
+        'name': product['name'] as String? ?? 'Без названия',
+        'price': product['price_with_vat'] as num? ??
+            product['price'] as num? ??
+            0,
+        'image_url': product['image_url'] as String?,
+        'unit': product['unit_of_measure'] as String? ?? 'шт',
+      };
+    }).toList();
+
+    print('Загружено товаров: ${mappedStock.length}');
+
+    if (mounted) {
+      setState(() {
+        myStock = mappedStock;
+        isLoading = false;
+      });
+    }
+  } catch (e, stack) {
+    print('Ошибка загрузки склада: $e');
+    print(stack);
+
+    if (mounted) {
+      setState(() {
+        errorMessage = 'Ошибка загрузки склада: $e';
+        isLoading = false;
+      });
+    }
+  } finally {
+    // Гарантированно отключаем loading, даже если произошёл краш
+    if (mounted) {
+      setState(() => isLoading = false);
     }
   }
+}
 
   void _updateDistribution(int productId, int qty) {
     setState(() {
-      final maxQty = myStock.firstWhere((p) => p['product_id'] == productId)['quantity'] as int;
+      final maxQty =
+          myStock.firstWhere((p) => p['product_id'] == productId)['quantity']
+              as int;
       if (qty > maxQty) qty = maxQty;
       if (qty <= 0) {
         distributionCart.remove(productId);
@@ -153,7 +245,7 @@ class _DistributionTabState extends State<DistributionTab> {
             onPressed: () => Navigator.pop(ctx, false),
             child: const Text('Отмена'),
           ),
-          ElevatedButton(
+          FilledButton(
             onPressed: () => Navigator.pop(ctx, true),
             child: const Text('Отправить'),
           ),
@@ -166,11 +258,10 @@ class _DistributionTabState extends State<DistributionTab> {
     setState(() => isSending = true);
 
     try {
-      // Создаём доставку — вставляем id текущего пользователя как supplier_id
       final deliveryRes = await supabase
           .from('deliveries')
           .insert({
-            'supplier_id': supabase.auth.currentUser?.id,  // ← просто id пользователя
+            'supplier_id': supabase.auth.currentUser?.id,
             'store_name': selectedStoreName,
             'status': 'pending',
           })
@@ -179,7 +270,6 @@ class _DistributionTabState extends State<DistributionTab> {
 
       final deliveryId = deliveryRes['id'] as int;
 
-      // Добавляем позиции
       final items = distributionCart.entries.map((entry) {
         return {
           'delivery_id': deliveryId,
@@ -192,11 +282,15 @@ class _DistributionTabState extends State<DistributionTab> {
 
       setState(() {
         distributionCart.clear();
+        selectedStoreName = null;
       });
 
-      _showSnack('Доставка создана и ожидает приёмки в магазине $selectedStoreName', isSuccess: true);
+      _showSnack(
+        'Доставка создана и ожидает приёмки в магазине $selectedStoreName',
+        isSuccess: true,
+      );
 
-      setState(() => selectedStoreName = null);
+      await _loadMyStock();
     } catch (e) {
       _showSnack('Ошибка создания доставки: $e', isError: true);
     } finally {
@@ -205,11 +299,15 @@ class _DistributionTabState extends State<DistributionTab> {
   }
 
   void _showSnack(String msg, {bool isError = false, bool isSuccess = false}) {
+    if (!mounted) return;
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: Text(msg),
-        backgroundColor: isError ? Colors.red : (isSuccess ? Colors.green : null),
+        backgroundColor: isError
+            ? Colors.red
+            : (isSuccess ? Colors.green : null),
         behavior: SnackBarBehavior.floating,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
       ),
     );
   }
@@ -217,152 +315,360 @@ class _DistributionTabState extends State<DistributionTab> {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
 
-    if (isLoading) {
-      return const Center(child: CircularProgressIndicator());
-    }
-
-    if (errorMessage != null) {
-      return Center(child: Text(errorMessage!, style: const TextStyle(color: Colors.red)));
-    }
-
-    if (myStoreName == null) {
-      return const Center(child: Text('У вас нет привязанного магазина'));
-    }
-
-    return Column(
-      children: [
-        // Выбор магазина
-        if (selectedStoreName == null) ...[
-          Padding(
-            padding: const EdgeInsets.all(16),
-            child: Text(
-              'Выберите магазин для доставки',
-              style: theme.textTheme.titleLarge,
-            ),
+    return Scaffold(
+      backgroundColor: colorScheme.background,
+      appBar: AppBar(
+        title: const Text('Распределение товаров'),
+        centerTitle: true,
+        elevation: 0,
+        scrolledUnderElevation: 2,
+        backgroundColor: colorScheme.surfaceContainerLow,
+        foregroundColor: colorScheme.onSurface,
+        surfaceTintColor: Colors.transparent,
+        bottom: PreferredSize(
+          preferredSize: const Size.fromHeight(1),
+          child: Container(
+            height: 1,
+            color: colorScheme.outlineVariant.withOpacity(0.6),
           ),
-          Expanded(
-            child: availableStores.isEmpty
-                ? const Center(child: Text('Нет доступных магазинов для доставки'))
-                : ListView.builder(
-                    itemCount: availableStores.length,
-                    itemBuilder: (context, index) {
-                      final store = availableStores[index];
-                      return ListTile(
-                        leading: const Icon(Icons.store_outlined),
-                        title: Text(store),
-                        trailing: const Icon(Icons.arrow_forward_ios, size: 16),
-                        onTap: () {
-                          setState(() => selectedStoreName = store);
-                        },
-                      );
-                    },
+        ),
+      ),
+      body: FadeTransition(
+        opacity: _fadeAnimation,
+        child: SlideTransition(
+          position: _slideAnimation,
+          child: isLoading
+              ? const Center(child: CircularProgressIndicator())
+              : errorMessage != null
+              ? Center(
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Icon(
+                        Icons.error_outline_rounded,
+                        size: 80,
+                        color: colorScheme.error,
+                      ),
+                      const SizedBox(height: 24),
+                      Text(
+                        errorMessage!,
+                        style: theme.textTheme.titleLarge?.copyWith(
+                          color: colorScheme.onSurface,
+                        ),
+                        textAlign: TextAlign.center,
+                      ),
+                      const SizedBox(height: 16),
+                      OutlinedButton(
+                        onPressed: _loadData,
+                        child: const Text('Повторить'),
+                      ),
+                    ],
                   ),
-          ),
-        ]
-
-        // Выбор товаров и отправка
-        else ...[
-          Padding(
-            padding: const EdgeInsets.fromLTRB(8, 16, 16, 8),
-            child: Row(
-              children: [
-                IconButton(
-                  icon: const Icon(Icons.arrow_back),
-                  onPressed: () => setState(() {
-                    selectedStoreName = null;
-                    distributionCart.clear();
-                  }),
-                ),
-                Expanded(
+                )
+              : myStoreName == null
+              ? Center(
                   child: Text(
-                    'Доставка в: $selectedStoreName',
+                    'У вас нет привязанного магазина',
                     style: theme.textTheme.titleLarge,
                   ),
-                ),
-              ],
-            ),
-          ),
-          Expanded(
-            child: myStock.isEmpty
-                ? const Center(child: Text('На вашем складе нет товаров для отправки'))
-                : ListView.builder(
-                    padding: const EdgeInsets.symmetric(horizontal: 12),
-                    itemCount: myStock.length,
-                    itemBuilder: (context, index) {
-                      final p = myStock[index];
-                      final productId = p['product_id'] as int;
-                      final maxQty = p['quantity'] as int;
-                      final sendQty = distributionCart[productId] ?? 0;
-
-                      return Card(
-                        margin: const EdgeInsets.only(bottom: 12),
-                        child: Padding(
-                          padding: const EdgeInsets.all(12),
-                          child: Row(
-                            children: [
-                              if (p['image_url'] != null)
-                                ClipRRect(
-                                  borderRadius: BorderRadius.circular(8),
-                                  child: Image.network(
-                                    p['image_url'],
-                                    width: 60,
-                                    height: 60,
-                                    fit: BoxFit.cover,
-                                  ),
-                                ),
-                              const SizedBox(width: 12),
-                              Expanded(
-                                child: Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    Text(p['name'], style: const TextStyle(fontWeight: FontWeight.bold)),
-                                    Text('${p['price']} ₽ / ${p['unit']}'),
-                                    Text('В наличии: $maxQty', style: TextStyle(color: Colors.grey[700])),
-                                  ],
-                                ),
-                              ),
-                              Row(
+                )
+              : selectedStoreName == null
+              ? Column(
+                  children: [
+                    Padding(
+                      padding: const EdgeInsets.all(16),
+                      child: Text(
+                        'Выберите магазин для доставки',
+                        style: theme.textTheme.titleLarge?.copyWith(
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                    ),
+                    Expanded(
+                      child: availableStores.isEmpty
+                          ? Center(
+                              child: Column(
+                                mainAxisAlignment: MainAxisAlignment.center,
                                 children: [
-                                  IconButton(
-                                    icon: const Icon(Icons.remove_circle_outline),
-                                    onPressed: sendQty > 0 ? () => _updateDistribution(productId, sendQty - 1) : null,
+                                  Icon(
+                                    Icons.store_outlined,
+                                    size: 80,
+                                    color: colorScheme.onSurfaceVariant
+                                        .withOpacity(0.4),
                                   ),
-                                  SizedBox(
-                                    width: 40,
-                                    child: Text('$sendQty', textAlign: TextAlign.center, style: const TextStyle(fontSize: 18)),
-                                  ),
-                                  IconButton(
-                                    icon: const Icon(Icons.add_circle_outline),
-                                    onPressed: sendQty < maxQty ? () => _updateDistribution(productId, sendQty + 1) : null,
+                                  const SizedBox(height: 24),
+                                  Text(
+                                    'Нет доступных магазинов',
+                                    style: theme.textTheme.titleMedium,
                                   ),
                                 ],
                               ),
-                            ],
+                            )
+                          : ListView.builder(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 12,
+                              ),
+                              itemCount: availableStores.length,
+                              itemBuilder: (context, index) {
+                                final store = availableStores[index];
+                                return Card(
+                                  margin: const EdgeInsets.only(bottom: 8),
+                                  elevation: 1,
+                                  shape: RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(20),
+                                  ),
+                                  color: colorScheme.surfaceContainerLowest,
+                                  child: ListTile(
+                                    leading: Icon(
+                                      Icons.store_outlined,
+                                      color: colorScheme.primary,
+                                    ),
+                                    title: Text(
+                                      store,
+                                      style: theme.textTheme.titleMedium
+                                          ?.copyWith(
+                                            fontWeight: FontWeight.w600,
+                                          ),
+                                    ),
+                                    trailing: Icon(
+                                      Icons.arrow_forward_ios_rounded,
+                                      size: 16,
+                                      color: colorScheme.onSurfaceVariant,
+                                    ),
+                                    onTap: () {
+                                      setState(() => selectedStoreName = store);
+                                    },
+                                  ),
+                                );
+                              },
+                            ),
+                    ),
+                  ],
+                )
+              : Column(
+                  children: [
+                    Padding(
+                      padding: const EdgeInsets.fromLTRB(8, 16, 16, 8),
+                      child: Row(
+                        children: [
+                          IconButton(
+                            icon: const Icon(Icons.arrow_back_rounded),
+                            onPressed: () {
+                              setState(() {
+                                selectedStoreName = null;
+                                distributionCart.clear();
+                              });
+                            },
+                          ),
+                          Expanded(
+                            child: Text(
+                              'Доставка в: $selectedStoreName',
+                              style: theme.textTheme.titleLarge?.copyWith(
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    Expanded(
+                      child: myStock.isEmpty
+                          ? Center(
+                              child: Column(
+                                mainAxisAlignment: MainAxisAlignment.center,
+                                children: [
+                                  Icon(
+                                    Icons.inventory_2_outlined,
+                                    size: 80,
+                                    color: colorScheme.onSurfaceVariant
+                                        .withOpacity(0.4),
+                                  ),
+                                  const SizedBox(height: 24),
+                                  Text(
+                                    'На вашем складе нет товаров',
+                                    style: theme.textTheme.titleMedium,
+                                  ),
+                                ],
+                              ),
+                            )
+                          : RefreshIndicator.adaptive(
+                              onRefresh: _loadMyStock,
+                              color: colorScheme.primary,
+                              child: ListView.builder(
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 12,
+                                  vertical: 8,
+                                ),
+                                itemCount: myStock.length,
+                                itemBuilder: (context, index) {
+                                  final p = myStock[index];
+                                  final productId = p['product_id'] as int;
+                                  final maxQty = p['quantity'] as int;
+                                  final sendQty =
+                                      distributionCart[productId] ?? 0;
+
+                                  return Card(
+                                    margin: const EdgeInsets.only(bottom: 12),
+                                    elevation: 1,
+                                    shadowColor: colorScheme.shadow.withOpacity(
+                                      0.12,
+                                    ),
+                                    shape: RoundedRectangleBorder(
+                                      borderRadius: BorderRadius.circular(20),
+                                    ),
+                                    color: colorScheme.surfaceContainerLowest,
+                                    child: Padding(
+                                      padding: const EdgeInsets.all(12),
+                                      child: Row(
+                                        children: [
+                                          if (p['image_url'] != null &&
+                                              p['image_url'].isNotEmpty)
+                                            ClipRRect(
+                                              borderRadius:
+                                                  BorderRadius.circular(16),
+                                              child: Image.network(
+                                                p['image_url'],
+                                                width: 60,
+                                                height: 60,
+                                                fit: BoxFit.cover,
+                                              ),
+                                            ),
+                                          const SizedBox(width: 12),
+                                          Expanded(
+                                            child: Column(
+                                              crossAxisAlignment:
+                                                  CrossAxisAlignment.start,
+                                              children: [
+                                                Text(
+                                                  p['name'],
+                                                  style: theme
+                                                      .textTheme
+                                                      .titleMedium
+                                                      ?.copyWith(
+                                                        fontWeight:
+                                                            FontWeight.w600,
+                                                      ),
+                                                  maxLines: 2,
+                                                  overflow:
+                                                      TextOverflow.ellipsis,
+                                                ),
+                                                const SizedBox(height: 4),
+                                                Text(
+                                                  '${_getPriceText(p['price'])} / ${p['unit']}',
+                                                  style: theme
+                                                      .textTheme
+                                                      .bodyMedium
+                                                      ?.copyWith(
+                                                        color: colorScheme
+                                                            .onSurfaceVariant,
+                                                      ),
+                                                ),
+                                                const SizedBox(height: 4),
+                                                Text(
+                                                  'В наличии: $maxQty',
+                                                  style: theme
+                                                      .textTheme
+                                                      .bodySmall
+                                                      ?.copyWith(
+                                                        color: colorScheme
+                                                            .onSurfaceVariant,
+                                                      ),
+                                                ),
+                                              ],
+                                            ),
+                                          ),
+                                          Row(
+                                            children: [
+                                              IconButton(
+                                                icon: const Icon(
+                                                  Icons
+                                                      .remove_circle_outline_rounded,
+                                                ),
+                                                onPressed: sendQty > 0
+                                                    ? () => _updateDistribution(
+                                                        productId,
+                                                        sendQty - 1,
+                                                      )
+                                                    : null,
+                                                color: colorScheme.primary,
+                                              ),
+                                              SizedBox(
+                                                width: 40,
+                                                child: Text(
+                                                  '$sendQty',
+                                                  textAlign: TextAlign.center,
+                                                  style: theme
+                                                      .textTheme
+                                                      .titleMedium
+                                                      ?.copyWith(
+                                                        fontWeight:
+                                                            FontWeight.w700,
+                                                      ),
+                                                ),
+                                              ),
+                                              IconButton(
+                                                icon: const Icon(
+                                                  Icons
+                                                      .add_circle_outline_rounded,
+                                                ),
+                                                onPressed: sendQty < maxQty
+                                                    ? () => _updateDistribution(
+                                                        productId,
+                                                        sendQty + 1,
+                                                      )
+                                                    : null,
+                                                color: colorScheme.primary,
+                                              ),
+                                            ],
+                                          ),
+                                        ],
+                                      ),
+                                    ),
+                                  );
+                                },
+                              ),
+                            ),
+                    ),
+
+                    // Кнопка отправки
+                    if (distributionCart.isNotEmpty)
+                      Padding(
+                        padding: const EdgeInsets.all(16),
+                        child: FilledButton.icon(
+                          onPressed: isSending ? null : _confirmAndSend,
+                          icon: isSending
+                              ? const SizedBox(
+                                  width: 20,
+                                  height: 20,
+                                  child: CircularProgressIndicator(
+                                    strokeWidth: 2.5,
+                                    color: Colors.white,
+                                  ),
+                                )
+                              : const Icon(Icons.local_shipping_rounded),
+                          label: Text(
+                            isSending
+                                ? 'Отправка...'
+                                : 'Создать доставку (${distributionCart.values.fold(0, (a, b) => a + b)} ед.)',
+                          ),
+                          style: FilledButton.styleFrom(
+                            minimumSize: const Size(double.infinity, 56),
+                            backgroundColor: colorScheme.primary,
+                            foregroundColor: colorScheme.onPrimary,
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(16),
+                            ),
+                            elevation: 4,
+                            shadowColor: colorScheme.primary.withOpacity(0.4),
                           ),
                         ),
-                      );
-                    },
-                  ),
-          ),
-          if (distributionCart.isNotEmpty)
-            Padding(
-              padding: const EdgeInsets.all(16),
-              child: ElevatedButton.icon(
-                onPressed: isSending ? null : _confirmAndSend,
-                icon: isSending
-                    ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2))
-                    : const Icon(Icons.local_shipping),
-                label: Text(isSending ? 'Отправка...' : 'Создать доставку (${distributionCart.values.fold(0, (a, b) => a + b)} ед.)'),
-                style: ElevatedButton.styleFrom(
-                  minimumSize: const Size(double.infinity, 56),
-                  backgroundColor: Colors.green[700],
-                  foregroundColor: Colors.white,
+                      ),
+                  ],
                 ),
-              ),
-            ),
-        ],
-      ],
+        ),
+      ),
     );
   }
 }

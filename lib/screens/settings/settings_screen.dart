@@ -9,6 +9,8 @@ class SettingsScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
     final themeService = Provider.of<ThemeService>(context);
 
     return Scaffold(
@@ -43,17 +45,10 @@ class SettingsScreen extends StatelessWidget {
 
           // Связаться с администратором (затычка)
           ListTile(
-            leading: const Icon(Icons.support_agent),
+            leading: Icon(Icons.support_agent_rounded, color: colorScheme.primary),
             title: const Text('Связаться с администратором'),
-            subtitle: const Text('Проблема / вопрос / баг'),
-            onTap: () {
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(
-                  content: Text('Пока пиши в Telegram или на почту • в разработке'),
-                  duration: Duration(seconds: 4),
-                ),
-              );
-            },
+            subtitle: const Text('Проблема, вопрос, предложение, баг'),
+            onTap: () => _showSupportDialog(context),
           ),
 
           // УДАЛЕНИЕ АККАУНТА ПОЛНОСТЬЮ
@@ -66,6 +61,99 @@ class SettingsScreen extends StatelessWidget {
         ],
       ),
     );
+  }
+
+  // Диалог "Связаться с администратором"
+  Future<void> _showSupportDialog(BuildContext context) async {
+    final controller = TextEditingController();
+    final formKey = GlobalKey<FormState>();
+
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(28)),
+        title: const Text('Написать администратору'),
+        content: SizedBox(
+          width: double.maxFinite,
+          child: Form(
+            key: formKey,
+            child: TextFormField(
+              controller: controller,
+              maxLines: 5,
+              minLines: 3,
+              decoration: InputDecoration(
+                hintText: 'Опишите проблему, вопрос или предложение...',
+                border: OutlineInputBorder(borderRadius: BorderRadius.circular(16)),
+                filled: true,
+                fillColor: Theme.of(ctx).colorScheme.surfaceContainerHighest,
+                contentPadding: const EdgeInsets.all(16),
+              ),
+              validator: (value) {
+                if (value == null || value.trim().isEmpty) {
+                  return 'Пожалуйста, напишите сообщение';
+                }
+                if (value.trim().length < 10) {
+                  return 'Сообщение слишком короткое';
+                }
+                return null;
+              },
+            ),
+          ),
+        ),
+        actionsPadding: const EdgeInsets.fromLTRB(16, 8, 16, 24),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, false),
+            child: const Text('Отмена'),
+          ),
+          FilledButton(
+            onPressed: () {
+              if (formKey.currentState!.validate()) {
+                Navigator.pop(ctx, true);
+              }
+            },
+            child: const Text('Отправить'),
+          ),
+        ],
+      ),
+    );
+
+    if (confirmed != true) return;
+
+    final message = controller.text.trim();
+    final supabase = Supabase.instance.client;
+    final userId = supabase.auth.currentUser?.id;
+
+    if (userId == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Не авторизован'), backgroundColor: Colors.red),
+      );
+      return;
+    }
+
+    try {
+      await supabase.from('support_messages').insert({
+        'user_id': userId,
+        'message': message,
+        'status': 'new',
+      });
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: const Text('Сообщение отправлено администратору'),
+          backgroundColor: Colors.green,
+          behavior: SnackBarBehavior.floating,
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+        ),
+      );
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Ошибка отправки: $e'),
+          backgroundColor: Colors.red,
+        ),
+      );
+    }
   }
 
   Future<void> _confirmAndDeleteEverything(BuildContext context) async {

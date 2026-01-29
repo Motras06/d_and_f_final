@@ -1,3 +1,4 @@
+// lib/screens/tabs/wholesale_warehouse/orders_tab.dart
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
@@ -8,7 +9,7 @@ class OrdersTab extends StatefulWidget {
   State<OrdersTab> createState() => _OrdersTabState();
 }
 
-class _OrdersTabState extends State<OrdersTab> {
+class _OrdersTabState extends State<OrdersTab> with SingleTickerProviderStateMixin {
   final supabase = Supabase.instance.client;
 
   List<Map<String, dynamic>> suppliers = [];
@@ -20,16 +21,56 @@ class _OrdersTabState extends State<OrdersTab> {
   bool isLoading = false;
   String searchQuery = '';
 
-  String? userStoreName; // кэшируем магазин пользователя один раз
+  String? userStoreName;
+
+  late AnimationController _animController;
+  late Animation<double> _fadeAnimation;
+  late Animation<Offset> _slideAnimation;
 
   @override
   void initState() {
     super.initState();
-    _loadUserStore(); // сначала узнаём магазин
+    _loadUserStore();
     _loadSuppliers();
+
+    _animController = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 600),
+    );
+
+    _fadeAnimation = CurvedAnimation(
+      parent: _animController,
+      curve: Curves.easeOutCubic,
+    );
+
+    _slideAnimation = Tween<Offset>(
+      begin: const Offset(0, 0.25),
+      end: Offset.zero,
+    ).animate(
+      CurvedAnimation(
+        parent: _animController,
+        curve: Curves.easeOutCubic,
+      ),
+    );
+
+    Future.delayed(const Duration(milliseconds: 200), () {
+      if (mounted) _animController.forward();
+    });
   }
 
-  /// Загружаем магазин текущего пользователя один раз
+  @override
+  void dispose() {
+    _animController.dispose();
+    super.dispose();
+  }
+
+  String _getPriceText(num? price) {
+    if (price == null || price <= 0) {
+      return 'По договорённости';
+    }
+    return '${price.toStringAsFixed(0)} BYN';
+  }
+
   Future<void> _loadUserStore() async {
     try {
       final assignment = await supabase
@@ -39,23 +80,26 @@ class _OrdersTabState extends State<OrdersTab> {
           .limit(1)
           .maybeSingle();
 
-      if (assignment != null && assignment['store_name'] != null) {
+      if (assignment != null && assignment['store_name'] != null && mounted) {
         setState(() {
           userStoreName = assignment['store_name'] as String;
         });
       }
     } catch (e) {
-      // тихо игнорируем, покажем ошибку только при попытке заказа
+      // тихо игнорируем
     }
   }
 
   Future<void> _loadSuppliers() async {
+    if (!mounted) return;
     setState(() => isLoading = true);
+
     try {
       final data = await supabase
           .from('suppliers')
           .select('id, name, email, phone')
           .order('name');
+
       if (mounted) {
         setState(() {
           suppliers = List<Map<String, dynamic>>.from(data);
@@ -64,16 +108,19 @@ class _OrdersTabState extends State<OrdersTab> {
     } catch (e) {
       _showSnack('Ошибка загрузки поставщиков: $e', isError: true);
     }
+
     if (mounted) setState(() => isLoading = false);
   }
 
   Future<void> _loadProducts() async {
-    if (selectedSupplierId == null) return;
+    if (selectedSupplierId == null || !mounted) return;
 
-    setState(() {
-      isLoading = true;
-      products = [];
-    });
+    if (mounted) {
+      setState(() {
+        isLoading = true;
+        products = [];
+      });
+    }
 
     try {
       var query = supabase
@@ -100,6 +147,7 @@ class _OrdersTabState extends State<OrdersTab> {
   }
 
   void _addToCart(int productId, int qty) {
+    if (!mounted) return;
     setState(() {
       cart[productId] = (cart[productId] ?? 0) + qty;
       if (cart[productId] == 0) cart.remove(productId);
@@ -118,7 +166,7 @@ class _OrdersTabState extends State<OrdersTab> {
 
     final qtyController = TextEditingController(text: '1');
 
-    bool? confirmed = await showDialog<bool>(
+    final confirmed = await showDialog<bool>(
       context: context,
       builder: (ctx) {
         final formKey = GlobalKey<FormState>();
@@ -132,7 +180,9 @@ class _OrdersTabState extends State<OrdersTab> {
               autofocus: true,
               decoration: InputDecoration(
                 labelText: 'Количество ($unit)',
-                border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                border: OutlineInputBorder(borderRadius: BorderRadius.circular(16)),
+                filled: true,
+                fillColor: Theme.of(ctx).colorScheme.surfaceContainerHighest,
               ),
               validator: (v) {
                 if (v == null || v.trim().isEmpty) return 'Обязательно';
@@ -147,7 +197,7 @@ class _OrdersTabState extends State<OrdersTab> {
               onPressed: () => Navigator.pop(ctx, false),
               child: const Text('Отмена'),
             ),
-            TextButton(
+            FilledButton(
               onPressed: () {
                 if (formKey.currentState!.validate()) {
                   Navigator.pop(ctx, true);
@@ -160,15 +210,11 @@ class _OrdersTabState extends State<OrdersTab> {
       },
     );
 
-    final qtyText = qtyController.text.trim();
-    final qty = int.tryParse(qtyText) ?? 1;
-
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      qtyController.dispose();
-    });
+    qtyController.dispose();
 
     if (confirmed != true || !mounted) return;
 
+    final qty = int.tryParse(qtyController.text.trim()) ?? 1;
     _addToCart(productId, qty);
     _showSnack('Добавлено $qty × $name в корзину', isSuccess: true);
   }
@@ -184,15 +230,14 @@ class _OrdersTabState extends State<OrdersTab> {
       return;
     }
 
+    if (!mounted) return;
     setState(() => isLoading = true);
 
     try {
-      // Для каждого товара в корзине — upsert в store_stock
       for (final entry in cart.entries) {
         final productId = entry.key;
         final addedQty = entry.value;
 
-        // Получаем текущее количество (если есть)
         final existing = await supabase
             .from('store_stock')
             .select('quantity')
@@ -210,11 +255,12 @@ class _OrdersTabState extends State<OrdersTab> {
         }, onConflict: 'store_name,product_id');
       }
 
-      setState(() {
-        cart.clear();
-      });
-
-      _showSnack('Товары успешно добавлены на склад $userStoreName', isSuccess: true);
+      if (mounted) {
+        setState(() {
+          cart.clear();
+        });
+        _showSnack('Товары успешно добавлены на склад $userStoreName', isSuccess: true);
+      }
     } catch (e) {
       _showSnack('Ошибка добавления на склад: $e', isError: true);
     }
@@ -232,9 +278,7 @@ class _OrdersTabState extends State<OrdersTab> {
         content: Text(msg),
         backgroundColor: isError
             ? Colors.red[700]
-            : isSuccess
-                ? Colors.green[700]
-                : null,
+            : (isSuccess ? Colors.green[700] : null),
         behavior: SnackBarBehavior.floating,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
         duration: const Duration(seconds: 4),
@@ -245,44 +289,72 @@ class _OrdersTabState extends State<OrdersTab> {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
 
     return Scaffold(
-      body: Column(
-        children: [
-          Padding(
-            padding: const EdgeInsets.fromLTRB(16, 8, 16, 4),
-            child: TextField(
-              decoration: InputDecoration(
-                hintText: selectedSupplierId == null
-                    ? 'Сначала выберите поставщика...'
-                    : 'Поиск по товарам...',
-                prefixIcon: const Icon(Icons.search, size: 22),
-                filled: true,
-                fillColor: theme.cardColor,
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(12),
-                  borderSide: BorderSide.none,
+      backgroundColor: colorScheme.background,
+      appBar: AppBar(
+        title: const Text('Заказы у поставщиков'),
+        centerTitle: true,
+        elevation: 0,
+        scrolledUnderElevation: 2,
+        backgroundColor: colorScheme.surfaceContainerLow,
+        foregroundColor: colorScheme.onSurface,
+        surfaceTintColor: Colors.transparent,
+        bottom: PreferredSize(
+          preferredSize: const Size.fromHeight(1),
+          child: Container(
+            height: 1,
+            color: colorScheme.outlineVariant.withOpacity(0.6),
+          ),
+        ),
+      ),
+      body: FadeTransition(
+        opacity: _fadeAnimation,
+        child: SlideTransition(
+          position: _slideAnimation,
+          child: Column(
+            children: [
+              // Поиск
+              Padding(
+                padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
+                child: TextField(
+                  decoration: InputDecoration(
+                    hintText: selectedSupplierId == null
+                        ? 'Сначала выберите поставщика...'
+                        : 'Поиск по товарам...',
+                    prefixIcon: const Icon(Icons.search_rounded),
+                    filled: true,
+                    fillColor: colorScheme.surfaceContainerHighest,
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(16),
+                      borderSide: BorderSide.none,
+                    ),
+                    contentPadding: const EdgeInsets.symmetric(vertical: 16, horizontal: 20),
+                  ),
+                  enabled: selectedSupplierId != null,
+                  onChanged: (value) {
+                    if (mounted) {
+                      setState(() => searchQuery = value);
+                      _loadProducts();
+                    }
+                  },
                 ),
-                contentPadding: const EdgeInsets.symmetric(vertical: 12),
               ),
-              enabled: selectedSupplierId != null,
-              onChanged: (value) {
-                setState(() => searchQuery = value);
-                _loadProducts();
-              },
-            ),
-          ),
 
-          Expanded(
-            child: isLoading
-                ? const Center(child: CircularProgressIndicator())
-                : selectedSupplierId == null
-                    ? _buildSuppliersList()
-                    : _buildProductsList(),
+              Expanded(
+                child: isLoading
+                    ? const Center(child: CircularProgressIndicator())
+                    : selectedSupplierId == null
+                        ? _buildSuppliersList()
+                        : _buildProductsList(),
+              ),
+            ],
           ),
-        ],
+        ),
       ),
 
+      // Кнопка добавления на склад
       floatingActionButton: cart.isNotEmpty && selectedSupplierId != null
           ? Padding(
               padding: EdgeInsets.only(
@@ -290,11 +362,12 @@ class _OrdersTabState extends State<OrdersTab> {
               ),
               child: FloatingActionButton.extended(
                 onPressed: isLoading ? null : _addToStore,
-                icon: const Icon(Icons.add_box),
+                icon: const Icon(Icons.add_box_rounded),
                 label: Text('Добавить на склад ($totalItems)'),
-                backgroundColor: Colors.green[700],
-                foregroundColor: Colors.white,
+                backgroundColor: colorScheme.primary,
+                foregroundColor: colorScheme.onPrimary,
                 elevation: 6,
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
               ),
             )
           : null,
@@ -303,11 +376,27 @@ class _OrdersTabState extends State<OrdersTab> {
   }
 
   Widget _buildSuppliersList() {
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
+
     if (suppliers.isEmpty) {
-      return const Center(
-        child: Text(
-          'Поставщиков пока нет',
-          style: TextStyle(color: Colors.grey, fontSize: 18),
+      return Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(
+              Icons.local_shipping_outlined,
+              size: 80,
+              color: colorScheme.onSurfaceVariant.withOpacity(0.4),
+            ),
+            const SizedBox(height: 24),
+            Text(
+              'Поставщиков пока нет',
+              style: theme.textTheme.titleLarge?.copyWith(
+                color: colorScheme.onSurface,
+              ),
+            ),
+          ],
         ),
       );
     }
@@ -319,24 +408,43 @@ class _OrdersTabState extends State<OrdersTab> {
         final sup = suppliers[index];
         final name = sup['name'] as String? ?? 'Без названия';
         return Card(
-          margin: const EdgeInsets.only(bottom: 8),
+          margin: const EdgeInsets.only(bottom: 12),
+          elevation: 1,
+          shadowColor: colorScheme.shadow.withOpacity(0.12),
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+          color: colorScheme.surfaceContainerLowest,
           child: ListTile(
             leading: CircleAvatar(
-              backgroundColor: Theme.of(context).colorScheme.primaryContainer,
+              backgroundColor: colorScheme.primaryContainer,
+              foregroundColor: colorScheme.onPrimaryContainer,
               child: Text(
                 name.isNotEmpty ? name[0].toUpperCase() : '?',
-                style: const TextStyle(fontWeight: FontWeight.bold),
+                style: const TextStyle(fontWeight: FontWeight.w600),
               ),
             ),
-            title: Text(name),
-            subtitle: Text(sup['email'] as String? ?? '—'),
-            trailing: const Icon(Icons.arrow_forward_ios, size: 16),
+            title: Text(
+              name,
+              style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w600),
+            ),
+            subtitle: Text(
+              sup['email'] as String? ?? '—',
+              style: theme.textTheme.bodyMedium?.copyWith(
+                color: colorScheme.onSurfaceVariant,
+              ),
+            ),
+            trailing: Icon(
+              Icons.arrow_forward_ios_rounded,
+              size: 16,
+              color: colorScheme.onSurfaceVariant,
+            ),
             onTap: () {
-              setState(() {
-                selectedSupplierId = sup['id'] as String?;
-                searchQuery = '';
-              });
-              _loadProducts();
+              if (mounted) {
+                setState(() {
+                  selectedSupplierId = sup['id'] as String?;
+                  searchQuery = '';
+                });
+                _loadProducts();
+              }
             },
           ),
         );
@@ -345,6 +453,9 @@ class _OrdersTabState extends State<OrdersTab> {
   }
 
   Widget _buildProductsList() {
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
+
     final supplier = suppliers.firstWhere(
       (s) => s['id'] == selectedSupplierId,
       orElse: () => {'name': 'Неизвестный поставщик'},
@@ -358,21 +469,22 @@ class _OrdersTabState extends State<OrdersTab> {
           child: Row(
             children: [
               IconButton(
-                icon: const Icon(Icons.arrow_back),
+                icon: const Icon(Icons.arrow_back_rounded),
                 onPressed: () {
-                  setState(() {
-                    selectedSupplierId = null;
-                    searchQuery = '';
-                    products = [];
-                  });
+                  if (mounted) {
+                    setState(() {
+                      selectedSupplierId = null;
+                      searchQuery = '';
+                      products = [];
+                    });
+                  }
                 },
               ),
               const SizedBox(width: 8),
               Expanded(
                 child: Text(
                   supplierName,
-                  style: const TextStyle(
-                    fontSize: 20,
+                  style: theme.textTheme.titleLarge?.copyWith(
                     fontWeight: FontWeight.w600,
                   ),
                   overflow: TextOverflow.ellipsis,
@@ -385,10 +497,23 @@ class _OrdersTabState extends State<OrdersTab> {
         Expanded(
           child: products.isEmpty
               ? Center(
-                  child: Text(
-                    searchQuery.isEmpty ? 'У этого поставщика нет товаров' : 'Ничего не найдено',
-                    style: const TextStyle(color: Colors.grey, fontSize: 16),
-                    textAlign: TextAlign.center,
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Icon(
+                        Icons.inventory_2_outlined,
+                        size: 80,
+                        color: colorScheme.onSurfaceVariant.withOpacity(0.4),
+                      ),
+                      const SizedBox(height: 24),
+                      Text(
+                        searchQuery.isEmpty
+                            ? 'У этого поставщика нет товаров'
+                            : 'Ничего не найдено',
+                        style: theme.textTheme.titleMedium,
+                        textAlign: TextAlign.center,
+                      ),
+                    ],
                   ),
                 )
               : ListView.builder(
@@ -404,10 +529,33 @@ class _OrdersTabState extends State<OrdersTab> {
                     final unit = p['unit_of_measure'] ?? 'шт';
 
                     return Card(
-                      margin: const EdgeInsets.only(bottom: 8),
+                      margin: const EdgeInsets.only(bottom: 12),
+                      elevation: 1,
+                      shadowColor: colorScheme.shadow.withOpacity(0.12),
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+                      color: colorScheme.surfaceContainerLowest,
                       child: ListTile(
-                        title: Text(p['name'] as String? ?? '—'),
-                        subtitle: Text('$price ₽ / $unit'),
+                        leading: p['image_url'] != null
+                            ? ClipRRect(
+                                borderRadius: BorderRadius.circular(12),
+                                child: Image.network(
+                                  p['image_url'],
+                                  width: 50,
+                                  height: 50,
+                                  fit: BoxFit.cover,
+                                ),
+                              )
+                            : null,
+                        title: Text(
+                          p['name'] as String? ?? '—',
+                          style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w600),
+                        ),
+                        subtitle: Text(
+                          '${_getPriceText(price)} / $unit',
+                          style: theme.textTheme.bodyMedium?.copyWith(
+                            color: colorScheme.onSurfaceVariant,
+                          ),
+                        ),
                         trailing: Row(
                           mainAxisSize: MainAxisSize.min,
                           children: [
@@ -415,21 +563,22 @@ class _OrdersTabState extends State<OrdersTab> {
                               Container(
                                 padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                                 decoration: BoxDecoration(
-                                  color: Theme.of(context).colorScheme.primary,
+                                  color: colorScheme.primary.withOpacity(0.12),
                                   borderRadius: BorderRadius.circular(16),
                                 ),
                                 child: Text(
                                   '$qty',
-                                  style: const TextStyle(
-                                    color: Colors.white,
+                                  style: TextStyle(
+                                    color: colorScheme.primary,
                                     fontWeight: FontWeight.bold,
                                   ),
                                 ),
                               ),
                             const SizedBox(width: 8),
                             IconButton(
-                              icon: const Icon(Icons.add_shopping_cart),
+                              icon: const Icon(Icons.add_shopping_cart_rounded),
                               tooltip: 'Добавить в заказ',
+                              color: colorScheme.primary,
                               onPressed: () => _showAddDialog(p),
                             ),
                           ],

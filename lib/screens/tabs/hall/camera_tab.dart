@@ -135,7 +135,7 @@ class _CameraTabState extends State<CameraTab>
                   style: const TextStyle(fontSize: 16),
                 ),
                 Text(
-                  'Цена: ${product['price']} ₽',
+                  'Цена: ${product['price']} BYN',
                   style: const TextStyle(
                     fontSize: 18,
                     fontWeight: FontWeight.bold,

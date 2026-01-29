@@ -59,7 +59,7 @@ class StockItemDialog extends StatelessWidget {
         'QR-код товара\n\n'
         'Название: $name\n'
         'Страна: $country\n'
-        'Цена: $price ₽ (с НДС $priceWithVat ₽)\n'
+        'Цена: $price BYN (с НДС $priceWithVat BYN)\n'
         'Остаток: $qty $unit\n'
         'Описание: ${about ?? '—'}\n'
         'Ссылка для сканирования: $qrUrl',
@@ -184,8 +184,8 @@ class StockItemDialog extends StatelessWidget {
                 title: 'Основные характеристики',
                 children: [
                   _infoRow(Icons.flag_outlined, 'Страна происхождения', country),
-                  _infoRow(Icons.monetization_on_outlined, 'Цена без НДС', '$price ₽'),
-                  _infoRow(Icons.price_check, 'Цена с НДС', '$priceWithVat ₽'),
+                  _infoRow(Icons.monetization_on_outlined, 'Цена без НДС', '$price BYN'),
+                  _infoRow(Icons.price_check, 'Цена с НДС', '$priceWithVat BYN'),
                   _infoRow(Icons.straighten, 'Единица измерения', unit),
                   _infoRow(Icons.calendar_today_outlined, 'Добавлен', createdAt),
                 ],
@@ -199,7 +199,7 @@ class StockItemDialog extends StatelessWidget {
                 title: 'НДС',
                 children: [
                   _infoRow(Icons.percent, 'Ставка НДС', '$vatRate%'),
-                  _infoRow(Icons.attach_money, 'Сумма НДС', '$vatAmount ₽'),
+                  _infoRow(Icons.attach_money, 'Сумма НДС', '$vatAmount BYN'),
                 ],
               ),
 
