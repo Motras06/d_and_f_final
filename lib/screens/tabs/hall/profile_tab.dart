@@ -384,7 +384,6 @@ class _ProfileTabState extends State<ProfileTab>
 
                   const SizedBox(height: 20),
 
-                  // Email
                   Card(
                     elevation: 6,
                     shape: RoundedRectangleBorder(

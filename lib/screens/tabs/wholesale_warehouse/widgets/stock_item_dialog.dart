@@ -1,6 +1,4 @@
-// lib/screens/tabs/wholesale_warehouse/widgets/stock_item_dialog.dart
 import 'dart:convert';
-
 import 'package:flutter/material.dart';
 import 'package:share_plus/share_plus.dart';
 
@@ -140,7 +138,6 @@ class _StockItemDialogState extends State<StockItemDialog>
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              // Заголовок
               Container(
                 padding: const EdgeInsets.all(24),
                 decoration: BoxDecoration(
@@ -159,14 +156,12 @@ class _StockItemDialogState extends State<StockItemDialog>
                 ),
               ),
 
-              // Содержимое (скроллируемое)
               Flexible(
                 child: SingleChildScrollView(
                   padding: const EdgeInsets.all(24),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      // Фото
                       if (imageUrl != null && imageUrl.isNotEmpty)
                         Center(
                           child: ClipRRect(
@@ -209,7 +204,6 @@ class _StockItemDialogState extends State<StockItemDialog>
                       if (imageUrl != null && imageUrl.isNotEmpty)
                         const SizedBox(height: 24),
 
-                      // Основная информация
                       _buildInfoCard(
                         context,
                         title: 'Основная информация',
@@ -239,7 +233,6 @@ class _StockItemDialogState extends State<StockItemDialog>
 
                       const SizedBox(height: 16),
 
-                      // НДС
                       _buildInfoCard(
                         context,
                         title: 'НДС',
@@ -275,7 +268,6 @@ class _StockItemDialogState extends State<StockItemDialog>
 
                       const SizedBox(height: 32),
 
-                      // Количество
                       Center(
                         child: Column(
                           children: [
@@ -337,7 +329,6 @@ class _StockItemDialogState extends State<StockItemDialog>
 
                       const SizedBox(height: 32),
 
-                      // QR-код
                       Center(
                         child: Column(
                           children: [
@@ -394,7 +385,6 @@ class _StockItemDialogState extends State<StockItemDialog>
                 ),
               ),
 
-              // Кнопки в матрице 2×2
               Padding(
                 padding: const EdgeInsets.fromLTRB(24, 0, 24, 24),
                 child: Column(
@@ -488,9 +478,6 @@ class _StockItemDialogState extends State<StockItemDialog>
     );
   }
 
-  // Методы _buildInfoCard, _buildInfoRow, _placeholderImage остаются без изменений
-  // (вставь их из предыдущей версии, если нужно)
-
   Widget _placeholderImage(ColorScheme colorScheme) {
     return Container(
       height: 200,
@@ -566,10 +553,4 @@ class _StockItemDialogState extends State<StockItemDialog>
       ),
     );
   }
-
-  // Методы _buildInfoCard, _buildInfoRow, _placeholderImage остаются без изменений
-  // (если нужно — вставь их из предыдущей версии)
-  // ... остальные методы (_buildInfoCard, _buildInfoRow, _placeholderImage) остаются без изменений ...
-
-
 }

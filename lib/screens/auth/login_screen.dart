@@ -5,7 +5,6 @@ import 'package:d_and_f_final/screens/auth/signup_screen.dart';
 import '../../models/profile.dart';
 import '../../services/auth_service.dart';
 
-import '../../screens/tabs/supplier/supplier_home.dart';
 import '../../screens/tabs/hall/hall_home.dart';
 import '../../screens/tabs/storage/storage_home.dart';
 import '../../screens/tabs/admin/admin_home.dart';
@@ -25,7 +24,7 @@ class _LoginScreenState extends State<LoginScreen>
   final _authService = AuthService();
 
   bool _loading = false;
-  bool _obscurePassword = true; 
+  bool _obscurePassword = true;
 
   late AnimationController _animationController;
   late Animation<double> _fadeAnimation;
@@ -229,8 +228,7 @@ class _LoginScreenState extends State<LoginScreen>
                             maxLength: 12,
                             decoration: InputDecoration(
                               labelText: 'Пароль',
-                              counterText:
-                                  '', 
+                              counterText: '',
                               prefixIcon: Icon(
                                 Icons.vpn_key_outlined,
                                 color: theme.colorScheme.primary,

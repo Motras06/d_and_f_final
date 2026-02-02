@@ -1,4 +1,3 @@
-// lib/screens/tabs/wholesale_warehouse/distribution_tab.dart
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
@@ -58,7 +57,6 @@ class _DistributionTabState extends State<DistributionTab>
     super.dispose();
   }
 
-  // Метод для форматирования цены с BYN
   String _getPriceText(num? price) {
     if (price == null || price <= 0) {
       return 'По договорённости';
@@ -76,7 +74,6 @@ class _DistributionTabState extends State<DistributionTab>
       final currentUserId = supabase.auth.currentUser?.id;
       if (currentUserId == null) throw Exception('Не авторизован');
 
-      // Мой магазин
       final myAssignment = await supabase
           .from('store_assignments')
           .select('store_name')
@@ -89,7 +86,6 @@ class _DistributionTabState extends State<DistributionTab>
       }
       myStoreName = myAssignment['store_name'] as String;
 
-      // Доступные магазины (без supplier)
       final allStoresRes = await supabase.from('stores').select('name');
       final allStoreNames = (allStoresRes as List)
           .map((s) => s['name'] as String)
@@ -115,7 +111,6 @@ class _DistributionTabState extends State<DistributionTab>
 
       setState(() => availableStores = freeStores);
 
-      // Мой склад
       await _loadMyStock();
     } catch (e, stack) {
       print('Ошибка загрузки: $e\n$stack');
@@ -127,31 +122,28 @@ class _DistributionTabState extends State<DistributionTab>
   }
 
   Future<void> _loadMyStock() async {
-  // Если магазин не загружен — выходим сразу
-  if (myStoreName == null) {
+    if (myStoreName == null) {
+      if (mounted) {
+        setState(() {
+          errorMessage = 'Магазин не найден';
+          isLoading = false;
+        });
+      }
+      return;
+    }
     if (mounted) {
       setState(() {
-        errorMessage = 'Магазин не найден';
-        isLoading = false;
+        isLoading = true;
+        errorMessage = null;
       });
     }
-    return;
-  }
 
-  // Устанавливаем loading (это безопасно, т.к. вызывается синхронно)
-  if (mounted) {
-    setState(() {
-      isLoading = true;
-      errorMessage = null;
-    });
-  }
+    try {
+      print('Загрузка склада для магазина: $myStoreName');
 
-  try {
-    print('Загрузка склада для магазина: $myStoreName');
-
-    final response = await supabase
-        .from('store_stock')
-        .select('''
+      final response = await supabase
+          .from('store_stock')
+          .select('''
           product_id,
           quantity,
           products!inner (
@@ -162,56 +154,55 @@ class _DistributionTabState extends State<DistributionTab>
             unit_of_measure
           )
         ''')
-        .eq('store_name', myStoreName!)
-        .gt('quantity', 0);
+          .eq('store_name', myStoreName!)
+          .gt('quantity', 0);
 
-    // Если виджет уже закрыт — выходим
-    if (!mounted) {
-      print('Виджет dispose во время загрузки склада — выходим');
-      return;
-    }
+      if (!mounted) {
+        print('Виджет dispose во время загрузки склада — выходим');
+        return;
+      }
 
-    final List<dynamic> data = response;
+      final List<dynamic> data = response;
 
-    final mappedStock = data.map((row) {
-      final product = row['products'] as Map<String, dynamic>? ?? {};
-      return {
-        'product_id': row['product_id'] as int? ?? 0,
-        'quantity': row['quantity'] as int? ?? 0,
-        'name': product['name'] as String? ?? 'Без названия',
-        'price': product['price_with_vat'] as num? ??
-            product['price'] as num? ??
-            0,
-        'image_url': product['image_url'] as String?,
-        'unit': product['unit_of_measure'] as String? ?? 'шт',
-      };
-    }).toList();
+      final mappedStock = data.map((row) {
+        final product = row['products'] as Map<String, dynamic>? ?? {};
+        return {
+          'product_id': row['product_id'] as int? ?? 0,
+          'quantity': row['quantity'] as int? ?? 0,
+          'name': product['name'] as String? ?? 'Без названия',
+          'price':
+              product['price_with_vat'] as num? ??
+              product['price'] as num? ??
+              0,
+          'image_url': product['image_url'] as String?,
+          'unit': product['unit_of_measure'] as String? ?? 'шт',
+        };
+      }).toList();
 
-    print('Загружено товаров: ${mappedStock.length}');
+      print('Загружено товаров: ${mappedStock.length}');
 
-    if (mounted) {
-      setState(() {
-        myStock = mappedStock;
-        isLoading = false;
-      });
-    }
-  } catch (e, stack) {
-    print('Ошибка загрузки склада: $e');
-    print(stack);
+      if (mounted) {
+        setState(() {
+          myStock = mappedStock;
+          isLoading = false;
+        });
+      }
+    } catch (e, stack) {
+      print('Ошибка загрузки склада: $e');
+      print(stack);
 
-    if (mounted) {
-      setState(() {
-        errorMessage = 'Ошибка загрузки склада: $e';
-        isLoading = false;
-      });
-    }
-  } finally {
-    // Гарантированно отключаем loading, даже если произошёл краш
-    if (mounted) {
-      setState(() => isLoading = false);
+      if (mounted) {
+        setState(() {
+          errorMessage = 'Ошибка загрузки склада: $e';
+          isLoading = false;
+        });
+      }
+    } finally {
+      if (mounted) {
+        setState(() => isLoading = false);
+      }
     }
   }
-}
 
   void _updateDistribution(int productId, int qty) {
     setState(() {
@@ -632,7 +623,6 @@ class _DistributionTabState extends State<DistributionTab>
                             ),
                     ),
 
-                    // Кнопка отправки
                     if (distributionCart.isNotEmpty)
                       Padding(
                         padding: const EdgeInsets.all(16),

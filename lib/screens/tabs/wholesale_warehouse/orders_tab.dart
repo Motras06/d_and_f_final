@@ -1,4 +1,3 @@
-// lib/screens/tabs/wholesale_warehouse/orders_tab.dart
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
@@ -9,7 +8,8 @@ class OrdersTab extends StatefulWidget {
   State<OrdersTab> createState() => _OrdersTabState();
 }
 
-class _OrdersTabState extends State<OrdersTab> with SingleTickerProviderStateMixin {
+class _OrdersTabState extends State<OrdersTab>
+    with SingleTickerProviderStateMixin {
   final supabase = Supabase.instance.client;
 
   List<Map<String, dynamic>> suppliers = [];
@@ -43,15 +43,10 @@ class _OrdersTabState extends State<OrdersTab> with SingleTickerProviderStateMix
       curve: Curves.easeOutCubic,
     );
 
-    _slideAnimation = Tween<Offset>(
-      begin: const Offset(0, 0.25),
-      end: Offset.zero,
-    ).animate(
-      CurvedAnimation(
-        parent: _animController,
-        curve: Curves.easeOutCubic,
-      ),
-    );
+    _slideAnimation =
+        Tween<Offset>(begin: const Offset(0, 0.25), end: Offset.zero).animate(
+          CurvedAnimation(parent: _animController, curve: Curves.easeOutCubic),
+        );
 
     Future.delayed(const Duration(milliseconds: 200), () {
       if (mounted) _animController.forward();
@@ -85,9 +80,7 @@ class _OrdersTabState extends State<OrdersTab> with SingleTickerProviderStateMix
           userStoreName = assignment['store_name'] as String;
         });
       }
-    } catch (e) {
-      // тихо игнорируем
-    }
+    } catch (e) {}
   }
 
   Future<void> _loadSuppliers() async {
@@ -176,11 +169,15 @@ class _OrdersTabState extends State<OrdersTab> with SingleTickerProviderStateMix
             key: formKey,
             child: TextFormField(
               controller: qtyController,
-              keyboardType: const TextInputType.numberWithOptions(decimal: false),
+              keyboardType: const TextInputType.numberWithOptions(
+                decimal: false,
+              ),
               autofocus: true,
               decoration: InputDecoration(
                 labelText: 'Количество ($unit)',
-                border: OutlineInputBorder(borderRadius: BorderRadius.circular(16)),
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(16),
+                ),
                 filled: true,
                 fillColor: Theme.of(ctx).colorScheme.surfaceContainerHighest,
               ),
@@ -226,7 +223,10 @@ class _OrdersTabState extends State<OrdersTab> with SingleTickerProviderStateMix
     }
 
     if (userStoreName == null) {
-      _showSnack('У вас нет привязанного магазина. Обратитесь к администратору.', isError: true);
+      _showSnack(
+        'У вас нет привязанного магазина. Обратитесь к администратору.',
+        isError: true,
+      );
       return;
     }
 
@@ -259,7 +259,10 @@ class _OrdersTabState extends State<OrdersTab> with SingleTickerProviderStateMix
         setState(() {
           cart.clear();
         });
-        _showSnack('Товары успешно добавлены на склад $userStoreName', isSuccess: true);
+        _showSnack(
+          'Товары успешно добавлены на склад $userStoreName',
+          isSuccess: true,
+        );
       }
     } catch (e) {
       _showSnack('Ошибка добавления на склад: $e', isError: true);
@@ -315,7 +318,6 @@ class _OrdersTabState extends State<OrdersTab> with SingleTickerProviderStateMix
           position: _slideAnimation,
           child: Column(
             children: [
-              // Поиск
               Padding(
                 padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
                 child: TextField(
@@ -330,7 +332,10 @@ class _OrdersTabState extends State<OrdersTab> with SingleTickerProviderStateMix
                       borderRadius: BorderRadius.circular(16),
                       borderSide: BorderSide.none,
                     ),
-                    contentPadding: const EdgeInsets.symmetric(vertical: 16, horizontal: 20),
+                    contentPadding: const EdgeInsets.symmetric(
+                      vertical: 16,
+                      horizontal: 20,
+                    ),
                   ),
                   enabled: selectedSupplierId != null,
                   onChanged: (value) {
@@ -346,15 +351,14 @@ class _OrdersTabState extends State<OrdersTab> with SingleTickerProviderStateMix
                 child: isLoading
                     ? const Center(child: CircularProgressIndicator())
                     : selectedSupplierId == null
-                        ? _buildSuppliersList()
-                        : _buildProductsList(),
+                    ? _buildSuppliersList()
+                    : _buildProductsList(),
               ),
             ],
           ),
         ),
       ),
 
-      // Кнопка добавления на склад
       floatingActionButton: cart.isNotEmpty && selectedSupplierId != null
           ? Padding(
               padding: EdgeInsets.only(
@@ -367,7 +371,9 @@ class _OrdersTabState extends State<OrdersTab> with SingleTickerProviderStateMix
                 backgroundColor: colorScheme.primary,
                 foregroundColor: colorScheme.onPrimary,
                 elevation: 6,
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(16),
+                ),
               ),
             )
           : null,
@@ -411,7 +417,9 @@ class _OrdersTabState extends State<OrdersTab> with SingleTickerProviderStateMix
           margin: const EdgeInsets.only(bottom: 12),
           elevation: 1,
           shadowColor: colorScheme.shadow.withOpacity(0.12),
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(20),
+          ),
           color: colorScheme.surfaceContainerLowest,
           child: ListTile(
             leading: CircleAvatar(
@@ -424,7 +432,9 @@ class _OrdersTabState extends State<OrdersTab> with SingleTickerProviderStateMix
             ),
             title: Text(
               name,
-              style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w600),
+              style: theme.textTheme.titleMedium?.copyWith(
+                fontWeight: FontWeight.w600,
+              ),
             ),
             subtitle: Text(
               sup['email'] as String? ?? '—',
@@ -532,7 +542,9 @@ class _OrdersTabState extends State<OrdersTab> with SingleTickerProviderStateMix
                       margin: const EdgeInsets.only(bottom: 12),
                       elevation: 1,
                       shadowColor: colorScheme.shadow.withOpacity(0.12),
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(20),
+                      ),
                       color: colorScheme.surfaceContainerLowest,
                       child: ListTile(
                         leading: p['image_url'] != null
@@ -548,7 +560,9 @@ class _OrdersTabState extends State<OrdersTab> with SingleTickerProviderStateMix
                             : null,
                         title: Text(
                           p['name'] as String? ?? '—',
-                          style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w600),
+                          style: theme.textTheme.titleMedium?.copyWith(
+                            fontWeight: FontWeight.w600,
+                          ),
                         ),
                         subtitle: Text(
                           '${_getPriceText(price)} / $unit',
@@ -561,7 +575,10 @@ class _OrdersTabState extends State<OrdersTab> with SingleTickerProviderStateMix
                           children: [
                             if (qty > 0)
                               Container(
-                                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 12,
+                                  vertical: 6,
+                                ),
                                 decoration: BoxDecoration(
                                   color: colorScheme.primary.withOpacity(0.12),
                                   borderRadius: BorderRadius.circular(16),

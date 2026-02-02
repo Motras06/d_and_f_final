@@ -1,10 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:d_and_f_final/models/profile.dart';
 
-import 'orders_tab.dart';          // Заказы
-import 'distribution_tab.dart';   // Распределение
-import 'accounting_tab.dart';     // Учёт
-import 'profile_tab.dart';        // Профиль
+import 'orders_tab.dart';
+import 'distribution_tab.dart';
+import 'accounting_tab.dart';
+import 'profile_tab.dart';
 import '../../settings/settings_screen.dart';
 
 class WholesaleWarehouseHome extends StatefulWidget {
@@ -61,7 +61,10 @@ class _WholesaleWarehouseHomeState extends State<WholesaleWarehouseHome>
       PageRouteBuilder(
         pageBuilder: (_, __, ___) => const SettingsScreen(),
         transitionsBuilder: (_, animation, __, child) => SlideTransition(
-          position: Tween<Offset>(begin: const Offset(1.0, 0.0), end: Offset.zero).animate(animation),
+          position: Tween<Offset>(
+            begin: const Offset(1.0, 0.0),
+            end: Offset.zero,
+          ).animate(animation),
           child: child,
         ),
       ),
@@ -74,7 +77,6 @@ class _WholesaleWarehouseHomeState extends State<WholesaleWarehouseHome>
     final isDark = theme.brightness == Brightness.dark;
 
     return Scaffold(
-      // НЕ используем extendBodyBehindAppBar — контент не должен лезть под AppBar
       appBar: AppBar(
         title: const Text('Оптовый склад • D&F'),
         backgroundColor: theme.appBarTheme.backgroundColor?.withOpacity(0.9),
@@ -86,10 +88,10 @@ class _WholesaleWarehouseHomeState extends State<WholesaleWarehouseHome>
             tooltip: 'Настройки',
             onPressed: _openSettings,
             splashRadius: 24,
-          )
+          ),
         ],
       ),
-      body: SafeArea(  // ← главное исправление: контент не уходит под AppBar и системные вырезы
+      body: SafeArea(
         child: Stack(
           children: [
             Container(
@@ -98,17 +100,21 @@ class _WholesaleWarehouseHomeState extends State<WholesaleWarehouseHome>
                   begin: Alignment.topCenter,
                   end: Alignment.bottomCenter,
                   colors: isDark
-                      ? [theme.colorScheme.background, theme.colorScheme.background.withOpacity(0.8)]
+                      ? [
+                          theme.colorScheme.background,
+                          theme.colorScheme.background.withOpacity(0.8),
+                        ]
                       : [Colors.indigo[50]!, Colors.white],
                 ),
               ),
             ),
             AnimatedSwitcher(
               duration: const Duration(milliseconds: 400),
-              transitionBuilder: (child, animation) => FadeTransition(opacity: animation, child: child),
+              transitionBuilder: (child, animation) =>
+                  FadeTransition(opacity: animation, child: child),
               child: Padding(
                 key: ValueKey<int>(_selectedIndex),
-                padding: const EdgeInsets.only(top: 8.0), // небольшой отступ сверху для красоты
+                padding: const EdgeInsets.only(top: 8.0),
                 child: _pages[_selectedIndex],
               ),
             ),

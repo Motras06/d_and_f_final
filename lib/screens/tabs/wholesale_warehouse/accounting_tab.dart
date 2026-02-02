@@ -1,4 +1,3 @@
-// lib/screens/tabs/wholesale_warehouse/accounting_tab.dart
 import 'package:d_and_f_final/screens/tabs/wholesale_warehouse/widgets/stock_item_card.dart';
 import 'package:d_and_f_final/screens/tabs/wholesale_warehouse/widgets/stock_item_dialog.dart';
 import 'package:flutter/material.dart';
@@ -11,7 +10,8 @@ class AccountingTab extends StatefulWidget {
   State<AccountingTab> createState() => _AccountingTabState();
 }
 
-class _AccountingTabState extends State<AccountingTab> with SingleTickerProviderStateMixin {
+class _AccountingTabState extends State<AccountingTab>
+    with SingleTickerProviderStateMixin {
   final supabase = Supabase.instance.client;
 
   String? storeName;
@@ -38,15 +38,13 @@ class _AccountingTabState extends State<AccountingTab> with SingleTickerProvider
       curve: Curves.easeOutCubic,
     );
 
-    _slideAnimation = Tween<Offset>(
-      begin: const Offset(0, 0.25),
-      end: Offset.zero,
-    ).animate(
-      CurvedAnimation(
-        parent: _animationController,
-        curve: Curves.easeOutCubic,
-      ),
-    );
+    _slideAnimation =
+        Tween<Offset>(begin: const Offset(0, 0.25), end: Offset.zero).animate(
+          CurvedAnimation(
+            parent: _animationController,
+            curve: Curves.easeOutCubic,
+          ),
+        );
 
     Future.delayed(const Duration(milliseconds: 300), () {
       if (mounted) _animationController.forward();
@@ -67,7 +65,6 @@ class _AccountingTabState extends State<AccountingTab> with SingleTickerProvider
     });
 
     try {
-      // 1. Магазин пользователя (берём первый)
       final assignment = await supabase
           .from('store_assignments')
           .select('store_name')
@@ -81,7 +78,6 @@ class _AccountingTabState extends State<AccountingTab> with SingleTickerProvider
       final store = assignment['store_name'] as String;
       setState(() => storeName = store);
 
-      // 2. Остатки + продукты
       final response = await supabase
           .from('store_stock')
           .select('''
@@ -100,7 +96,7 @@ class _AccountingTabState extends State<AccountingTab> with SingleTickerProvider
           ''')
           .eq('store_name', store);
 
-      final List<dynamic> rawData = response ?? [];
+      final List<dynamic> rawData = response;
 
       final List<Map<String, dynamic>> mappedItems = rawData
           .whereType<Map<String, dynamic>>()
@@ -111,7 +107,8 @@ class _AccountingTabState extends State<AccountingTab> with SingleTickerProvider
               'quantity': row['quantity'] as int? ?? 0,
               'name': product['name'] as String? ?? 'Без названия',
               'country': product['country'] as String? ?? '—',
-              'price': (product['price_with_vat'] as num?) ??
+              'price':
+                  (product['price_with_vat'] as num?) ??
                   (product['price'] as num?) ??
                   0,
               'image_url': product['image_url'] as String?,
@@ -121,8 +118,9 @@ class _AccountingTabState extends State<AccountingTab> with SingleTickerProvider
           })
           .toList();
 
-      // Сортировка по имени
-      mappedItems.sort((a, b) => (a['name'] as String).compareTo(b['name'] as String));
+      mappedItems.sort(
+        (a, b) => (a['name'] as String).compareTo(b['name'] as String),
+      );
 
       if (mounted) {
         setState(() {
@@ -184,10 +182,15 @@ class _AccountingTabState extends State<AccountingTab> with SingleTickerProvider
         title: const Text('Удалить товар?'),
         content: const Text('Это действие нельзя отменить.'),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('Отмена')),
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, false),
+            child: const Text('Отмена'),
+          ),
           TextButton(
             onPressed: () => Navigator.pop(ctx, true),
-            style: TextButton.styleFrom(foregroundColor: Theme.of(context).colorScheme.error),
+            style: TextButton.styleFrom(
+              foregroundColor: Theme.of(context).colorScheme.error,
+            ),
             child: const Text('Удалить'),
           ),
         ],
@@ -214,9 +217,9 @@ class _AccountingTabState extends State<AccountingTab> with SingleTickerProvider
       }
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Ошибка удаления: $e')),
-        );
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('Ошибка удаления: $e')));
       }
     }
   }
@@ -247,112 +250,117 @@ class _AccountingTabState extends State<AccountingTab> with SingleTickerProvider
             child: isLoading
                 ? const Center(child: CircularProgressIndicator())
                 : errorMessage != null
-                    ? Center(
-                        child: Column(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            Icon(
-                              Icons.error_outline_rounded,
-                              size: 80,
-                              color: colorScheme.error,
-                            ),
-                            const SizedBox(height: 24),
-                            Text(
-                              errorMessage!,
-                              style: theme.textTheme.titleLarge?.copyWith(
-                                color: colorScheme.onSurface,
-                              ),
-                              textAlign: TextAlign.center,
-                            ),
-                            const SizedBox(height: 16),
-                            OutlinedButton(
-                              onPressed: _loadStock,
-                              child: const Text('Повторить'),
-                            ),
-                          ],
+                ? Center(
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Icon(
+                          Icons.error_outline_rounded,
+                          size: 80,
+                          color: colorScheme.error,
                         ),
-                      )
-                    : stockItems.isEmpty
-                        ? Center(
-                            child: Column(
+                        const SizedBox(height: 24),
+                        Text(
+                          errorMessage!,
+                          style: theme.textTheme.titleLarge?.copyWith(
+                            color: colorScheme.onSurface,
+                          ),
+                          textAlign: TextAlign.center,
+                        ),
+                        const SizedBox(height: 16),
+                        OutlinedButton(
+                          onPressed: _loadStock,
+                          child: const Text('Повторить'),
+                        ),
+                      ],
+                    ),
+                  )
+                : stockItems.isEmpty
+                ? Center(
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Icon(
+                          Icons.inventory_2_outlined,
+                          size: 100,
+                          color: colorScheme.onSurfaceVariant.withOpacity(0.4),
+                        ),
+                        const SizedBox(height: 32),
+                        Text(
+                          'Склад пуст',
+                          style: theme.textTheme.headlineMedium?.copyWith(
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                        const SizedBox(height: 12),
+                        Text(
+                          'Добавьте товары через приёмку поставок',
+                          style: theme.textTheme.bodyLarge?.copyWith(
+                            color: colorScheme.onSurfaceVariant,
+                          ),
+                          textAlign: TextAlign.center,
+                        ),
+                      ],
+                    ),
+                  )
+                : Column(
+                    children: [
+                      Padding(
+                        padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
+                        child: Card(
+                          elevation: 2,
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(20),
+                          ),
+                          color: colorScheme.surfaceContainerLow,
+                          child: Padding(
+                            padding: const EdgeInsets.symmetric(
+                              vertical: 20,
+                              horizontal: 16,
+                            ),
+                            child: Row(
                               mainAxisAlignment: MainAxisAlignment.center,
                               children: [
                                 Icon(
-                                  Icons.inventory_2_outlined,
-                                  size: 100,
-                                  color: colorScheme.onSurfaceVariant.withOpacity(0.4),
+                                  Icons.store_outlined,
+                                  color: colorScheme.primary,
+                                  size: 32,
                                 ),
-                                const SizedBox(height: 32),
+                                const SizedBox(width: 16),
                                 Text(
-                                  'Склад пуст',
-                                  style: theme.textTheme.headlineMedium?.copyWith(
-                                    fontWeight: FontWeight.w600,
+                                  'Склад: $storeName',
+                                  style: theme.textTheme.titleLarge?.copyWith(
+                                    fontWeight: FontWeight.w700,
                                   ),
-                                ),
-                                const SizedBox(height: 12),
-                                Text(
-                                  'Добавьте товары через приёмку поставок',
-                                  style: theme.textTheme.bodyLarge?.copyWith(
-                                    color: colorScheme.onSurfaceVariant,
-                                  ),
-                                  textAlign: TextAlign.center,
                                 ),
                               ],
                             ),
-                          )
-                        : Column(
-                            children: [
-                              // Карточка со складом
-                              Padding(
-                                padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
-                                child: Card(
-                                  elevation: 2,
-                                  shape: RoundedRectangleBorder(
-                                    borderRadius: BorderRadius.circular(20),
-                                  ),
-                                  color: colorScheme.surfaceContainerLow,
-                                  child: Padding(
-                                    padding: const EdgeInsets.symmetric(vertical: 20, horizontal: 16),
-                                    child: Row(
-                                      mainAxisAlignment: MainAxisAlignment.center,
-                                      children: [
-                                        Icon(
-                                          Icons.store_outlined,
-                                          color: colorScheme.primary,
-                                          size: 32,
-                                        ),
-                                        const SizedBox(width: 16),
-                                        Text(
-                                          'Склад: $storeName',
-                                          style: theme.textTheme.titleLarge?.copyWith(
-                                            fontWeight: FontWeight.w700,
-                                          ),
-                                        ),
-                                      ],
-                                    ),
-                                  ),
-                                ),
-                              ),
-
-                              Expanded(
-                                child: RefreshIndicator.adaptive(
-                                  onRefresh: _loadStock,
-                                  color: colorScheme.primary,
-                                  child: ListView.builder(
-                                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                                    itemCount: stockItems.length,
-                                    itemBuilder: (context, index) {
-                                      final item = stockItems[index];
-                                      return StockItemCard(
-                                        item: item,
-                                        onTap: () => _showProductDetails(item),
-                                      );
-                                    },
-                                  ),
-                                ),
-                              ),
-                            ],
                           ),
+                        ),
+                      ),
+
+                      Expanded(
+                        child: RefreshIndicator.adaptive(
+                          onRefresh: _loadStock,
+                          color: colorScheme.primary,
+                          child: ListView.builder(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 12,
+                              vertical: 8,
+                            ),
+                            itemCount: stockItems.length,
+                            itemBuilder: (context, index) {
+                              final item = stockItems[index];
+                              return StockItemCard(
+                                item: item,
+                                onTap: () => _showProductDetails(item),
+                              );
+                            },
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
           ),
         ),
       ),

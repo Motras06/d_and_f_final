@@ -14,7 +14,8 @@ class StorageHome extends StatefulWidget {
   State<StorageHome> createState() => _StorageHomeState();
 }
 
-class _StorageHomeState extends State<StorageHome> with SingleTickerProviderStateMixin {
+class _StorageHomeState extends State<StorageHome>
+    with SingleTickerProviderStateMixin {
   int _selectedIndex = 0;
   late List<Widget> _pages;
 
@@ -57,7 +58,10 @@ class _StorageHomeState extends State<StorageHome> with SingleTickerProviderStat
       PageRouteBuilder(
         pageBuilder: (_, __, ___) => const SettingsScreen(),
         transitionsBuilder: (_, animation, __, child) => SlideTransition(
-          position: Tween<Offset>(begin: const Offset(1.0, 0.0), end: Offset.zero).animate(animation),
+          position: Tween<Offset>(
+            begin: const Offset(1.0, 0.0),
+            end: Offset.zero,
+          ).animate(animation),
           child: child,
         ),
       ),
@@ -93,14 +97,18 @@ class _StorageHomeState extends State<StorageHome> with SingleTickerProviderStat
                 begin: Alignment.topCenter,
                 end: Alignment.bottomCenter,
                 colors: isDark
-                    ? [theme.colorScheme.background, theme.colorScheme.background.withOpacity(0.8)]
+                    ? [
+                        theme.colorScheme.background,
+                        theme.colorScheme.background.withOpacity(0.8),
+                      ]
                     : [Colors.blue[50]!, Colors.white],
               ),
             ),
           ),
           AnimatedSwitcher(
             duration: const Duration(milliseconds: 400),
-            transitionBuilder: (child, animation) => FadeTransition(opacity: animation, child: child),
+            transitionBuilder: (child, animation) =>
+                FadeTransition(opacity: animation, child: child),
             child: Padding(
               key: ValueKey<int>(_selectedIndex),
               padding: const EdgeInsets.only(top: 5.0),
@@ -122,7 +130,10 @@ class _StorageHomeState extends State<StorageHome> with SingleTickerProviderStat
         items: [
           BottomNavigationBarItem(
             icon: Icon(Icons.inventory_2_outlined),
-            activeIcon: Icon(Icons.inventory_2, color: theme.colorScheme.primary),
+            activeIcon: Icon(
+              Icons.inventory_2,
+              color: theme.colorScheme.primary,
+            ),
             label: 'Приём товаров',
           ),
           BottomNavigationBarItem(

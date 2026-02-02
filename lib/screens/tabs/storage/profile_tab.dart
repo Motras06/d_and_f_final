@@ -13,7 +13,8 @@ class ProfileTab extends StatefulWidget {
   State<ProfileTab> createState() => _ProfileTabState();
 }
 
-class _ProfileTabState extends State<ProfileTab> with SingleTickerProviderStateMixin {
+class _ProfileTabState extends State<ProfileTab>
+    with SingleTickerProviderStateMixin {
   late TextEditingController _usernameController;
   bool _isEditingUsername = false;
   bool _isLoading = false;
@@ -25,7 +26,9 @@ class _ProfileTabState extends State<ProfileTab> with SingleTickerProviderStateM
   @override
   void initState() {
     super.initState();
-    _usernameController = TextEditingController(text: widget.profile.username ?? '');
+    _usernameController = TextEditingController(
+      text: widget.profile.username ?? '',
+    );
 
     _animationController = AnimationController(
       vsync: this,
@@ -36,9 +39,13 @@ class _ProfileTabState extends State<ProfileTab> with SingleTickerProviderStateM
       CurvedAnimation(parent: _animationController, curve: Curves.easeInOut),
     );
 
-    _slideAnimation = Tween<Offset>(begin: const Offset(0, 0.3), end: Offset.zero).animate(
-      CurvedAnimation(parent: _animationController, curve: Curves.easeOutCubic),
-    );
+    _slideAnimation =
+        Tween<Offset>(begin: const Offset(0, 0.3), end: Offset.zero).animate(
+          CurvedAnimation(
+            parent: _animationController,
+            curve: Curves.easeOutCubic,
+          ),
+        );
 
     _animationController.forward();
   }
@@ -70,7 +77,9 @@ class _ProfileTabState extends State<ProfileTab> with SingleTickerProviderStateM
           content: const Text('Имя обновлено!'),
           backgroundColor: AppColors.success,
           behavior: SnackBarBehavior.floating,
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(12),
+          ),
         ),
       );
       setState(() => _isEditingUsername = false);
@@ -80,7 +89,9 @@ class _ProfileTabState extends State<ProfileTab> with SingleTickerProviderStateM
           content: Text('Ошибка: $e'),
           backgroundColor: Theme.of(context).colorScheme.error,
           behavior: SnackBarBehavior.floating,
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(12),
+          ),
         ),
       );
     } finally {
@@ -102,7 +113,9 @@ class _ProfileTabState extends State<ProfileTab> with SingleTickerProviderStateM
       context: context,
       builder: (context) => StatefulBuilder(
         builder: (context, setDialogState) => AlertDialog(
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(20),
+          ),
           title: const Text('Смена пароля'),
           content: SingleChildScrollView(
             child: Column(
@@ -114,9 +127,13 @@ class _ProfileTabState extends State<ProfileTab> with SingleTickerProviderStateM
                     obscureText: true,
                     decoration: InputDecoration(
                       labelText: 'Старый пароль',
-                      border: OutlineInputBorder(borderRadius: BorderRadius.circular(16)),
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(16),
+                      ),
                       filled: true,
-                      fillColor: Theme.of(context).colorScheme.surface.withOpacity(0.1),
+                      fillColor: Theme.of(
+                        context,
+                      ).colorScheme.surface.withOpacity(0.1),
                     ),
                   ),
                 ] else ...[
@@ -125,9 +142,13 @@ class _ProfileTabState extends State<ProfileTab> with SingleTickerProviderStateM
                     obscureText: true,
                     decoration: InputDecoration(
                       labelText: 'Новый пароль',
-                      border: OutlineInputBorder(borderRadius: BorderRadius.circular(16)),
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(16),
+                      ),
                       filled: true,
-                      fillColor: Theme.of(context).colorScheme.surface.withOpacity(0.1),
+                      fillColor: Theme.of(
+                        context,
+                      ).colorScheme.surface.withOpacity(0.1),
                     ),
                   ),
                   const SizedBox(height: 12),
@@ -136,9 +157,13 @@ class _ProfileTabState extends State<ProfileTab> with SingleTickerProviderStateM
                     obscureText: true,
                     decoration: InputDecoration(
                       labelText: 'Подтвердите пароль',
-                      border: OutlineInputBorder(borderRadius: BorderRadius.circular(16)),
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(16),
+                      ),
                       filled: true,
-                      fillColor: Theme.of(context).colorScheme.surface.withOpacity(0.1),
+                      fillColor: Theme.of(
+                        context,
+                      ).colorScheme.surface.withOpacity(0.1),
                     ),
                   ),
                 ],
@@ -146,7 +171,10 @@ class _ProfileTabState extends State<ProfileTab> with SingleTickerProviderStateM
             ),
           ),
           actions: [
-            TextButton(onPressed: () => Navigator.pop(context), child: const Text('Отмена')),
+            TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: const Text('Отмена'),
+            ),
             ElevatedButton(
               onPressed: _isLoading
                   ? null
@@ -162,26 +190,37 @@ class _ProfileTabState extends State<ProfileTab> with SingleTickerProviderStateM
                           ScaffoldMessenger.of(context).showSnackBar(
                             SnackBar(
                               content: const Text('Старый пароль неверный'),
-                              backgroundColor: Theme.of(context).colorScheme.error,
+                              backgroundColor: Theme.of(
+                                context,
+                              ).colorScheme.error,
                             ),
                           );
                         }
                       } else {
-                        if (newPassController.text != confirmPassController.text) {
+                        if (newPassController.text !=
+                            confirmPassController.text) {
                           ScaffoldMessenger.of(context).showSnackBar(
-                            const SnackBar(content: Text('Пароли не совпадают')),
+                            const SnackBar(
+                              content: Text('Пароли не совпадают'),
+                            ),
                           );
                           return;
                         }
                         if (newPassController.text.length < 8) {
                           ScaffoldMessenger.of(context).showSnackBar(
-                            const SnackBar(content: Text('Пароль должен быть не менее 8 символов')),
+                            const SnackBar(
+                              content: Text(
+                                'Пароль должен быть не менее 8 символов',
+                              ),
+                            ),
                           );
                           return;
                         }
 
                         try {
-                          await auth.updateUser(UserAttributes(password: newPassController.text));
+                          await auth.updateUser(
+                            UserAttributes(password: newPassController.text),
+                          );
                           Navigator.pop(context);
                           ScaffoldMessenger.of(context).showSnackBar(
                             SnackBar(
@@ -190,9 +229,9 @@ class _ProfileTabState extends State<ProfileTab> with SingleTickerProviderStateM
                             ),
                           );
                         } catch (e) {
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            SnackBar(content: Text('Ошибка: $e')),
-                          );
+                          ScaffoldMessenger.of(
+                            context,
+                          ).showSnackBar(SnackBar(content: Text('Ошибка: $e')));
                         }
                       }
                     },
@@ -216,7 +255,10 @@ class _ProfileTabState extends State<ProfileTab> with SingleTickerProviderStateM
         title: const Text('Выход'),
         content: const Text('Выйти из аккаунта?'),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(context, false), child: const Text('Отмена')),
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text('Отмена'),
+          ),
           TextButton(
             onPressed: () => Navigator.pop(context, true),
             child: const Text('Выйти', style: TextStyle(color: Colors.red)),
@@ -231,7 +273,8 @@ class _ProfileTabState extends State<ProfileTab> with SingleTickerProviderStateM
         Navigator.of(context).pushAndRemoveUntil(
           PageRouteBuilder(
             pageBuilder: (_, __, ___) => const LoginScreen(),
-            transitionsBuilder: (_, animation, __, child) => FadeTransition(opacity: animation, child: child),
+            transitionsBuilder: (_, animation, __, child) =>
+                FadeTransition(opacity: animation, child: child),
           ),
           (route) => false,
         );
@@ -253,14 +296,19 @@ class _ProfileTabState extends State<ProfileTab> with SingleTickerProviderStateM
           child: SlideTransition(
             position: _slideAnimation,
             child: SingleChildScrollView(
-              padding: const EdgeInsets.symmetric(horizontal: 32.0, vertical: 24.0),
+              padding: const EdgeInsets.symmetric(
+                horizontal: 32.0,
+                vertical: 24.0,
+              ),
               child: Column(
                 children: [
                   Hero(
                     tag: 'profile_avatar',
                     child: CircleAvatar(
                       radius: 80,
-                      backgroundColor: theme.colorScheme.primary.withOpacity(0.2),
+                      backgroundColor: theme.colorScheme.primary.withOpacity(
+                        0.2,
+                      ),
                       child: Text(
                         _usernameController.text.isEmpty
                             ? widget.profile.mail[0].toUpperCase()
@@ -278,10 +326,16 @@ class _ProfileTabState extends State<ProfileTab> with SingleTickerProviderStateM
 
                   Card(
                     elevation: 8,
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(20),
+                    ),
                     color: theme.cardColor,
                     child: ListTile(
-                      leading: Icon(Icons.person_outline, color: theme.colorScheme.primary, size: 32),
+                      leading: Icon(
+                        Icons.person_outline,
+                        color: theme.colorScheme.primary,
+                        size: 32,
+                      ),
                       title: _isEditingUsername
                           ? TextField(
                               controller: _usernameController,
@@ -290,19 +344,28 @@ class _ProfileTabState extends State<ProfileTab> with SingleTickerProviderStateM
                               decoration: InputDecoration(
                                 border: InputBorder.none,
                                 hintText: 'Введите имя',
-                                hintStyle: TextStyle(color: theme.textTheme.bodyMedium?.color),
+                                hintStyle: TextStyle(
+                                  color: theme.textTheme.bodyMedium?.color,
+                                ),
                               ),
                             )
                           : Text(
-                              _usernameController.text.isEmpty ? 'Имя не указано' : _usernameController.text,
-                              style: const TextStyle(fontSize: 20, fontWeight: FontWeight.w600),
+                              _usernameController.text.isEmpty
+                                  ? 'Имя не указано'
+                                  : _usernameController.text,
+                              style: const TextStyle(
+                                fontSize: 20,
+                                fontWeight: FontWeight.w600,
+                              ),
                             ),
                       trailing: AnimatedSwitcher(
                         duration: const Duration(milliseconds: 300),
                         child: IconButton(
                           key: ValueKey(_isEditingUsername),
                           icon: Icon(
-                            _isEditingUsername ? Icons.check_circle : Icons.edit_outlined,
+                            _isEditingUsername
+                                ? Icons.check_circle
+                                : Icons.edit_outlined,
                             color: theme.colorScheme.primary,
                             size: 28,
                           ),
@@ -324,12 +387,24 @@ class _ProfileTabState extends State<ProfileTab> with SingleTickerProviderStateM
 
                   Card(
                     elevation: 6,
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(20),
+                    ),
                     color: theme.cardColor,
                     child: ListTile(
-                      leading: Icon(Icons.email_outlined, color: theme.colorScheme.primary, size: 32),
-                      title: const Text('Email', style: TextStyle(fontWeight: FontWeight.w600)),
-                      subtitle: Text(widget.profile.mail, style: const TextStyle(fontSize: 16)),
+                      leading: Icon(
+                        Icons.email_outlined,
+                        color: theme.colorScheme.primary,
+                        size: 32,
+                      ),
+                      title: const Text(
+                        'Email',
+                        style: TextStyle(fontWeight: FontWeight.w600),
+                      ),
+                      subtitle: Text(
+                        widget.profile.mail,
+                        style: const TextStyle(fontSize: 16),
+                      ),
                     ),
                   ),
 
@@ -337,14 +412,27 @@ class _ProfileTabState extends State<ProfileTab> with SingleTickerProviderStateM
 
                   Card(
                     elevation: 6,
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(20),
+                    ),
                     color: theme.cardColor,
                     child: ListTile(
-                      leading: Icon(Icons.badge_outlined, color: theme.colorScheme.primary, size: 32),
-                      title: const Text('Роль', style: TextStyle(fontWeight: FontWeight.w600)),
+                      leading: Icon(
+                        Icons.badge_outlined,
+                        color: theme.colorScheme.primary,
+                        size: 32,
+                      ),
+                      title: const Text(
+                        'Роль',
+                        style: TextStyle(fontWeight: FontWeight.w600),
+                      ),
                       subtitle: Text(
                         "кладовщик".toUpperCase(),
-                        style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: theme.colorScheme.primary),
+                        style: TextStyle(
+                          fontSize: 18,
+                          fontWeight: FontWeight.bold,
+                          color: theme.colorScheme.primary,
+                        ),
                       ),
                     ),
                   ),
@@ -356,11 +444,19 @@ class _ProfileTabState extends State<ProfileTab> with SingleTickerProviderStateM
                     child: OutlinedButton.icon(
                       onPressed: _changePassword,
                       icon: const Icon(Icons.lock_reset_outlined, size: 28),
-                      label: const Text('Сменить пароль', style: TextStyle(fontSize: 18)),
+                      label: const Text(
+                        'Сменить пароль',
+                        style: TextStyle(fontSize: 18),
+                      ),
                       style: OutlinedButton.styleFrom(
                         padding: const EdgeInsets.symmetric(vertical: 18),
-                        side: BorderSide(color: theme.colorScheme.primary, width: 2),
-                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+                        side: BorderSide(
+                          color: theme.colorScheme.primary,
+                          width: 2,
+                        ),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(20),
+                        ),
                         foregroundColor: theme.colorScheme.primary,
                       ),
                     ),
@@ -373,12 +469,17 @@ class _ProfileTabState extends State<ProfileTab> with SingleTickerProviderStateM
                     child: ElevatedButton.icon(
                       onPressed: _logout,
                       icon: const Icon(Icons.logout, size: 28),
-                      label: const Text('Выйти из аккаунта', style: TextStyle(fontSize: 18)),
+                      label: const Text(
+                        'Выйти из аккаунта',
+                        style: TextStyle(fontSize: 18),
+                      ),
                       style: ElevatedButton.styleFrom(
                         backgroundColor: Colors.red,
                         foregroundColor: Colors.white,
                         padding: const EdgeInsets.symmetric(vertical: 18),
-                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(20),
+                        ),
                         elevation: 6,
                       ),
                     ),
@@ -387,7 +488,9 @@ class _ProfileTabState extends State<ProfileTab> with SingleTickerProviderStateM
                   if (_isLoading)
                     Padding(
                       padding: const EdgeInsets.only(top: 30),
-                      child: CircularProgressIndicator(color: theme.colorScheme.primary),
+                      child: CircularProgressIndicator(
+                        color: theme.colorScheme.primary,
+                      ),
                     ),
                 ],
               ),

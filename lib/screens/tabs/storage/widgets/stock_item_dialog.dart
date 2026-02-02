@@ -20,13 +20,15 @@ class StockItemDialog extends StatelessWidget {
     final theme = Theme.of(context);
     final isDark = theme.brightness == Brightness.dark;
 
-    final controller = TextEditingController(text: (item['quantity'] ?? 0).toString());
+    final controller = TextEditingController(
+      text: (item['quantity'] ?? 0).toString(),
+    );
 
-    // Извлекаем все поля безопасно
     final name = item['name'] as String? ?? 'Товар без названия';
     final country = item['country'] as String? ?? '—';
     final price = (item['price'] as num?)?.toStringAsFixed(2) ?? '—';
-    final priceWithVat = (item['price_with_vat'] as num?)?.toStringAsFixed(2) ?? '—';
+    final priceWithVat =
+        (item['price_with_vat'] as num?)?.toStringAsFixed(2) ?? '—';
     final unit = item['unit_of_measure'] as String? ?? 'шт';
     final vatRate = (item['vat_rate'] as num?)?.toStringAsFixed(1) ?? '20.0';
     final vatAmount = (item['vat_amount'] as num?)?.toStringAsFixed(2) ?? '—';
@@ -41,7 +43,6 @@ class StockItemDialog extends StatelessWidget {
         ? Colors.green
         : (qty > 0 ? Colors.orange : Colors.red);
 
-    // QR-код
     final safeData = {
       'id': item['product_id'],
       'name': name,
@@ -52,7 +53,8 @@ class StockItemDialog extends StatelessWidget {
       'unit': unit,
     };
     final qrData = jsonEncode(safeData);
-    final qrUrl = 'https://quickchart.io/qr?text=$qrData&size=300&margin=20&light=ffffff&dark=121212';
+    final qrUrl =
+        'https://quickchart.io/qr?text=$qrData&size=300&margin=20&light=ffffff&dark=121212';
 
     void shareQR() {
       Share.share(
@@ -77,8 +79,14 @@ class StockItemDialog extends StatelessWidget {
         decoration: BoxDecoration(
           gradient: LinearGradient(
             colors: isDark
-                ? [theme.colorScheme.primary.withOpacity(0.3), Colors.transparent]
-                : [theme.colorScheme.primary.withOpacity(0.2), Colors.transparent],
+                ? [
+                    theme.colorScheme.primary.withOpacity(0.3),
+                    Colors.transparent,
+                  ]
+                : [
+                    theme.colorScheme.primary.withOpacity(0.2),
+                    Colors.transparent,
+                  ],
           ),
           borderRadius: const BorderRadius.vertical(top: Radius.circular(32)),
         ),
@@ -101,7 +109,6 @@ class StockItemDialog extends StatelessWidget {
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              // Фото товара
               if (imageUrl != null)
                 Center(
                   child: ClipRRect(
@@ -128,7 +135,6 @@ class StockItemDialog extends StatelessWidget {
                 ),
               if (imageUrl != null) const SizedBox(height: 32),
 
-              // QR-код
               Center(
                 child: Container(
                   padding: const EdgeInsets.all(24),
@@ -178,22 +184,36 @@ class StockItemDialog extends StatelessWidget {
               ),
               const SizedBox(height: 32),
 
-              // Основная информация
               _infoCard(
                 context,
                 title: 'Основные характеристики',
                 children: [
-                  _infoRow(Icons.flag_outlined, 'Страна происхождения', country),
-                  _infoRow(Icons.monetization_on_outlined, 'Цена без НДС', '$price BYN'),
-                  _infoRow(Icons.price_check, 'Цена с НДС', '$priceWithVat BYN'),
+                  _infoRow(
+                    Icons.flag_outlined,
+                    'Страна происхождения',
+                    country,
+                  ),
+                  _infoRow(
+                    Icons.monetization_on_outlined,
+                    'Цена без НДС',
+                    '$price BYN',
+                  ),
+                  _infoRow(
+                    Icons.price_check,
+                    'Цена с НДС',
+                    '$priceWithVat BYN',
+                  ),
                   _infoRow(Icons.straighten, 'Единица измерения', unit),
-                  _infoRow(Icons.calendar_today_outlined, 'Добавлен', createdAt),
+                  _infoRow(
+                    Icons.calendar_today_outlined,
+                    'Добавлен',
+                    createdAt,
+                  ),
                 ],
               ),
 
               const SizedBox(height: 16),
 
-              // НДС
               _infoCard(
                 context,
                 title: 'НДС',
@@ -205,22 +225,15 @@ class StockItemDialog extends StatelessWidget {
 
               const SizedBox(height: 16),
 
-              // Описание
               if (about != null && about.isNotEmpty)
                 _infoCard(
                   context,
                   title: 'Описание товара',
-                  children: [
-                    Text(
-                      about,
-                      style: theme.textTheme.bodyMedium,
-                    ),
-                  ],
+                  children: [Text(about, style: theme.textTheme.bodyMedium)],
                 ),
 
               const SizedBox(height: 32),
 
-              // Количество
               Center(
                 child: Column(
                   children: [
@@ -241,13 +254,22 @@ class StockItemDialog extends StatelessWidget {
                       controller: controller,
                       keyboardType: TextInputType.number,
                       textAlign: TextAlign.center,
-                      style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
+                      style: const TextStyle(
+                        fontSize: 24,
+                        fontWeight: FontWeight.bold,
+                      ),
                       decoration: InputDecoration(
                         labelText: 'Новое количество',
-                        border: OutlineInputBorder(borderRadius: BorderRadius.circular(16)),
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(16),
+                        ),
                         filled: true,
-                        fillColor: theme.colorScheme.surfaceVariant.withOpacity(0.3),
-                        contentPadding: const EdgeInsets.symmetric(vertical: 16),
+                        fillColor: theme.colorScheme.surfaceVariant.withOpacity(
+                          0.3,
+                        ),
+                        contentPadding: const EdgeInsets.symmetric(
+                          vertical: 16,
+                        ),
                       ),
                     ),
                   ],
@@ -279,7 +301,10 @@ class StockItemDialog extends StatelessWidget {
                     Navigator.pop(context);
                     onDelete();
                   },
-                  child: const Text('Удалить', style: TextStyle(color: Colors.red)),
+                  child: const Text(
+                    'Удалить',
+                    style: TextStyle(color: Colors.red),
+                  ),
                 ),
                 const SizedBox(width: 8),
                 ElevatedButton(
@@ -291,10 +316,18 @@ class StockItemDialog extends StatelessWidget {
                   style: ElevatedButton.styleFrom(
                     backgroundColor: Colors.green,
                     foregroundColor: Colors.white,
-                    padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(32)),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 24,
+                      vertical: 16,
+                    ),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(32),
+                    ),
                   ),
-                  child: const Text('Сохранить', style: TextStyle(fontWeight: FontWeight.bold)),
+                  child: const Text(
+                    'Сохранить',
+                    style: TextStyle(fontWeight: FontWeight.bold),
+                  ),
                 ),
               ],
             ),
@@ -305,7 +338,11 @@ class StockItemDialog extends StatelessWidget {
     );
   }
 
-  Widget _infoCard(BuildContext context, {required String title, required List<Widget> children}) {
+  Widget _infoCard(
+    BuildContext context, {
+    required String title,
+    required List<Widget> children,
+  }) {
     final theme = Theme.of(context);
     return Card(
       elevation: 2,
@@ -317,7 +354,9 @@ class StockItemDialog extends StatelessWidget {
           children: [
             Text(
               title,
-              style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold),
+              style: theme.textTheme.titleMedium?.copyWith(
+                fontWeight: FontWeight.bold,
+              ),
             ),
             const SizedBox(height: 12),
             ...children,
@@ -335,15 +374,9 @@ class StockItemDialog extends StatelessWidget {
           Icon(icon, size: 20, color: Colors.grey[600]),
           const SizedBox(width: 12),
           Expanded(
-            child: Text(
-              label,
-              style: const TextStyle(color: Colors.grey),
-            ),
+            child: Text(label, style: const TextStyle(color: Colors.grey)),
           ),
-          Text(
-            value,
-            style: const TextStyle(fontWeight: FontWeight.w600),
-          ),
+          Text(value, style: const TextStyle(fontWeight: FontWeight.w600)),
         ],
       ),
     );

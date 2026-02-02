@@ -17,7 +17,6 @@ class SettingsScreen extends StatelessWidget {
       appBar: AppBar(title: const Text('Настройки')),
       body: ListView(
         children: [
-          // Тёмная тема
           SwitchListTile(
             secondary: const Icon(Icons.dark_mode_outlined),
             title: const Text('Тёмная тема'),
@@ -29,7 +28,6 @@ class SettingsScreen extends StatelessWidget {
 
           const Divider(),
 
-          // О приложении
           ListTile(
             leading: const Icon(Icons.info_outline),
             title: const Text('О приложении'),
@@ -43,19 +41,25 @@ class SettingsScreen extends StatelessWidget {
             },
           ),
 
-          // Связаться с администратором (затычка)
           ListTile(
-            leading: Icon(Icons.support_agent_rounded, color: colorScheme.primary),
+            leading: Icon(
+              Icons.support_agent_rounded,
+              color: colorScheme.primary,
+            ),
             title: const Text('Связаться с администратором'),
             subtitle: const Text('Проблема, вопрос, предложение, баг'),
             onTap: () => _showSupportDialog(context),
           ),
 
-          // УДАЛЕНИЕ АККАУНТА ПОЛНОСТЬЮ
           ListTile(
             leading: const Icon(Icons.delete_forever, color: Colors.red),
-            title: const Text('Удалить мой аккаунт полностью', style: TextStyle(color: Colors.red)),
-            subtitle: const Text('Удалится профиль + аккаунт в Supabase навсегда'),
+            title: const Text(
+              'Удалить мой аккаунт полностью',
+              style: TextStyle(color: Colors.red),
+            ),
+            subtitle: const Text(
+              'Удалится профиль + аккаунт в Supabase навсегда',
+            ),
             onTap: () => _confirmAndDeleteEverything(context),
           ),
         ],
@@ -63,7 +67,6 @@ class SettingsScreen extends StatelessWidget {
     );
   }
 
-  // Диалог "Связаться с администратором"
   Future<void> _showSupportDialog(BuildContext context) async {
     final controller = TextEditingController();
     final formKey = GlobalKey<FormState>();
@@ -83,7 +86,9 @@ class SettingsScreen extends StatelessWidget {
               minLines: 3,
               decoration: InputDecoration(
                 hintText: 'Опишите проблему, вопрос или предложение...',
-                border: OutlineInputBorder(borderRadius: BorderRadius.circular(16)),
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(16),
+                ),
                 filled: true,
                 fillColor: Theme.of(ctx).colorScheme.surfaceContainerHighest,
                 contentPadding: const EdgeInsets.all(16),
@@ -126,7 +131,10 @@ class SettingsScreen extends StatelessWidget {
 
     if (userId == null) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Не авторизован'), backgroundColor: Colors.red),
+        const SnackBar(
+          content: Text('Не авторизован'),
+          backgroundColor: Colors.red,
+        ),
       );
       return;
     }
@@ -143,7 +151,9 @@ class SettingsScreen extends StatelessWidget {
           content: const Text('Сообщение отправлено администратору'),
           backgroundColor: Colors.green,
           behavior: SnackBarBehavior.floating,
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(12),
+          ),
         ),
       );
     } catch (e) {
@@ -157,88 +167,86 @@ class SettingsScreen extends StatelessWidget {
   }
 
   Future<void> _confirmAndDeleteEverything(BuildContext context) async {
-  final confirmed = await showDialog<bool>(
-    context: context,
-    builder: (context) => AlertDialog(
-      title: const Text('Удалить аккаунт НАВСЕГДА?'),
-      content: const Text(
-        'Это тестовый проект → полное удаление:\n'
-        '• профиль (public.profiles)\n'
-        '• пользователь в auth.users\n\n'
-        'После этого можно зарегистрироваться заново тем же email.\n\n'
-        'Продолжить?',
-      ),
-      actions: [
-        TextButton(
-          onPressed: () => Navigator.pop(context, false),
-          child: const Text('Отмена'),
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Удалить аккаунт НАВСЕГДА?'),
+        content: const Text(
+          'Это тестовый проект → полное удаление:\n'
+          '• профиль (public.profiles)\n'
+          '• пользователь в auth.users\n\n'
+          'После этого можно зарегистрироваться заново тем же email.\n\n'
+          'Продолжить?',
         ),
-        TextButton(
-          style: TextButton.styleFrom(foregroundColor: Colors.red),
-          onPressed: () => Navigator.pop(context, true),
-          child: const Text('Удалить всё'),
-        ),
-      ],
-    ),
-  );
-
-  if (confirmed != true) return;
-
-  final supabase = Supabase.instance.client;
-  final currentUser = supabase.auth.currentUser;
-
-  if (currentUser == null) {
-    if (context.mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Не авторизован')),
-      );
-    }
-    return;
-  }
-
-  try {
-    final serviceRoleKey = dotenv.env['SUPABASE_ANON_KEY'];
-    if (serviceRoleKey == null || serviceRoleKey.isEmpty) {
-      throw Exception('SUPABASE_ANON_KEY не найден в .env');
-    }
-
-    // Создаём чистый клиент ТОЛЬКО с service_role → без любой сессии
-    final adminClient = SupabaseClient(
-      dotenv.env['SUPABASE_URL']!,
-      serviceRoleKey,
-      authOptions: FlutterAuthClientOptions(
-        // Самое важное: отключаем хранение/использование любой сессии
-        localStorage: const EmptyLocalStorage(),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text('Отмена'),
+          ),
+          TextButton(
+            style: TextButton.styleFrom(foregroundColor: Colors.red),
+            onPressed: () => Navigator.pop(context, true),
+            child: const Text('Удалить всё'),
+          ),
+        ],
       ),
-      // Явно переопределяем заголовки (на всякий случай)
-      headers: {
-        'apikey': serviceRoleKey,
-        'Authorization': 'Bearer $serviceRoleKey',
-      },
     );
 
-    // 1. Удаляем профиль обычным клиентом (если RLS позволяет твоему пользователю)
-    await supabase.from('profiles').delete().eq('id', currentUser.id);
+    if (confirmed != true) return;
 
-    // 2. Удаляем пользователя из auth.users через admin-клиент
-    await adminClient.auth.admin.deleteUser(currentUser.id);
+    final supabase = Supabase.instance.client;
+    final currentUser = supabase.auth.currentUser;
 
-    // 3. Выход из обычной сессии
-    await supabase.auth.signOut();
-
-    if (context.mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Аккаунт полностью удалён • выполнен выход')),
-      );
-      Navigator.of(context).pushNamedAndRemoveUntil('/login', (route) => false);
+    if (currentUser == null) {
+      if (context.mounted) {
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(const SnackBar(content: Text('Не авторизован')));
+      }
+      return;
     }
-  } catch (e) {
-    debugPrint('Ошибка удаления: $e'); // ← смотри в консоль
-    if (context.mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Не удалось удалить аккаунт: $e')),
+
+    try {
+      final serviceRoleKey = dotenv.env['SUPABASE_ANON_KEY'];
+      if (serviceRoleKey == null || serviceRoleKey.isEmpty) {
+        throw Exception('SUPABASE_ANON_KEY не найден в .env');
+      }
+
+      final adminClient = SupabaseClient(
+        dotenv.env['SUPABASE_URL']!,
+        serviceRoleKey,
+        authOptions: FlutterAuthClientOptions(
+          localStorage: const EmptyLocalStorage(),
+        ),
+        headers: {
+          'apikey': serviceRoleKey,
+          'Authorization': 'Bearer $serviceRoleKey',
+        },
       );
+
+      await supabase.from('profiles').delete().eq('id', currentUser.id);
+
+      await adminClient.auth.admin.deleteUser(currentUser.id);
+
+      await supabase.auth.signOut();
+
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Аккаунт полностью удалён • выполнен выход'),
+          ),
+        );
+        Navigator.of(
+          context,
+        ).pushNamedAndRemoveUntil('/login', (route) => false);
+      }
+    } catch (e) {
+      debugPrint('Ошибка удаления: $e');
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Не удалось удалить аккаунт: $e')),
+        );
+      }
     }
   }
-}
 }

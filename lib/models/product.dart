@@ -6,7 +6,7 @@ class Product {
   final num price;
   final String? imageUrl;
   final DateTime? createdAt;
-  final String? createdBy; 
+  final String? createdBy;
 
   Product({
     required this.id,
@@ -27,7 +27,9 @@ class Product {
       about: json['about'] as String?,
       price: json['price'] as num,
       imageUrl: json['image_url'] as String?,
-      createdAt: json['created_at'] != null ? DateTime.parse(json['created_at']) : null,
+      createdAt: json['created_at'] != null
+          ? DateTime.parse(json['created_at'])
+          : null,
       createdBy: json['created_by'] as String?,
     );
   }

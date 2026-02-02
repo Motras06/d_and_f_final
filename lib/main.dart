@@ -4,7 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:provider/provider.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
-import 'package:device_preview/device_preview.dart'; // ← Новый импорт
+import 'package:device_preview/device_preview.dart';
 
 import 'screens/auth/login_screen.dart';
 import 'screens/tabs/hall/hall_home.dart';
@@ -27,7 +27,7 @@ void main() async {
 
   runApp(
     DevicePreview(
-      enabled: !kReleaseMode, // Включено только в debug-режиме
+      enabled: !kReleaseMode,
       builder: (context) => const MainApp(),
     ),
   );
@@ -122,10 +122,9 @@ class _MainAppState extends State<MainApp> {
                 ? ThemeMode.dark
                 : ThemeMode.light,
 
-            // ← Необходимые настройки для DevicePreview
             useInheritedMediaQuery: true,
-            locale: DevicePreview.locale(context),       // Локаль от DevicePreview
-            builder: DevicePreview.appBuilder,           // Builder от DevicePreview
+            locale: DevicePreview.locale(context),
+            builder: DevicePreview.appBuilder,
 
             home: _currentScreen,
           );

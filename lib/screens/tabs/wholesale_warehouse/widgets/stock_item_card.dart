@@ -1,21 +1,17 @@
-// lib/screens/tabs/wholesale_warehouse/widgets/stock_item_card.dart
 import 'package:flutter/material.dart';
 
 class StockItemCard extends StatefulWidget {
   final Map<String, dynamic> item;
   final VoidCallback onTap;
 
-  const StockItemCard({
-    super.key,
-    required this.item,
-    required this.onTap,
-  });
+  const StockItemCard({super.key, required this.item, required this.onTap});
 
   @override
   State<StockItemCard> createState() => _StockItemCardState();
 }
 
-class _StockItemCardState extends State<StockItemCard> with SingleTickerProviderStateMixin {
+class _StockItemCardState extends State<StockItemCard>
+    with SingleTickerProviderStateMixin {
   late AnimationController _animController;
   late Animation<double> _fadeAnimation;
   late Animation<double> _scaleAnimation;
@@ -37,10 +33,12 @@ class _StockItemCardState extends State<StockItemCard> with SingleTickerProvider
       CurvedAnimation(parent: _animController, curve: Curves.easeOutCubic),
     );
 
-    // Запускаем анимацию с небольшой задержкой (для stagger-эффекта в списке)
-    Future.delayed(Duration(milliseconds: 100 * (widget.item.hashCode % 10)), () {
-      if (mounted) _animController.forward();
-    });
+    Future.delayed(
+      Duration(milliseconds: 100 * (widget.item.hashCode % 10)),
+      () {
+        if (mounted) _animController.forward();
+      },
+    );
   }
 
   @override
@@ -50,9 +48,9 @@ class _StockItemCardState extends State<StockItemCard> with SingleTickerProvider
   }
 
   Color _getQuantityColor(int qty, ColorScheme colorScheme) {
-    if (qty > 10) return colorScheme.primary; // синий (много)
-    if (qty > 0) return Colors.orangeAccent;   // оранжевый (мало)
-    return colorScheme.error;                  // красный (0)
+    if (qty > 10) return colorScheme.primary; 
+    if (qty > 0) return Colors.orangeAccent; 
+    return colorScheme.error; 
   }
 
   @override
@@ -68,7 +66,9 @@ class _StockItemCardState extends State<StockItemCard> with SingleTickerProvider
     final imageUrl = widget.item['image_url'] as String?;
     final about = widget.item['about'] as String?;
 
-    final priceText = price > 0 ? '${price.toStringAsFixed(0)} BYN / $unit' : 'Цена не указана';
+    final priceText = price > 0
+        ? '${price.toStringAsFixed(0)} BYN / $unit'
+        : 'Цена не указана';
 
     return FadeTransition(
       opacity: _fadeAnimation,
@@ -88,8 +88,10 @@ class _StockItemCardState extends State<StockItemCard> with SingleTickerProvider
             ],
           ),
           child: Card(
-            elevation: 0, // тень уже от контейнера
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+            elevation: 0, 
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(20),
+            ),
             color: colorScheme.surfaceContainerLowest,
             clipBehavior: Clip.antiAlias,
             child: InkWell(
@@ -100,7 +102,6 @@ class _StockItemCardState extends State<StockItemCard> with SingleTickerProvider
                 child: Row(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    // Фото товара
                     ClipRRect(
                       borderRadius: BorderRadius.circular(16),
                       child: imageUrl != null && imageUrl.isNotEmpty
@@ -109,23 +110,29 @@ class _StockItemCardState extends State<StockItemCard> with SingleTickerProvider
                               width: 80,
                               height: 80,
                               fit: BoxFit.cover,
-                              loadingBuilder: (context, child, loadingProgress) {
-                                if (loadingProgress == null) return child;
-                                return Container(
-                                  width: 80,
-                                  height: 80,
-                                  color: colorScheme.surfaceContainerHighest,
-                                  child: const Center(child: CircularProgressIndicator(strokeWidth: 2)),
-                                );
-                              },
-                              errorBuilder: (_, __, ___) => _placeholderIcon(colorScheme),
+                              loadingBuilder:
+                                  (context, child, loadingProgress) {
+                                    if (loadingProgress == null) return child;
+                                    return Container(
+                                      width: 80,
+                                      height: 80,
+                                      color:
+                                          colorScheme.surfaceContainerHighest,
+                                      child: const Center(
+                                        child: CircularProgressIndicator(
+                                          strokeWidth: 2,
+                                        ),
+                                      ),
+                                    );
+                                  },
+                              errorBuilder: (_, __, ___) =>
+                                  _placeholderIcon(colorScheme),
                             )
                           : _placeholderIcon(colorScheme),
                     ),
 
                     const SizedBox(width: 16),
 
-                    // Основная информация
                     Expanded(
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
@@ -153,7 +160,9 @@ class _StockItemCardState extends State<StockItemCard> with SingleTickerProvider
                             Text(
                               about,
                               style: theme.textTheme.bodySmall?.copyWith(
-                                color: colorScheme.onSurfaceVariant.withOpacity(0.85),
+                                color: colorScheme.onSurfaceVariant.withOpacity(
+                                  0.85,
+                                ),
                                 height: 1.4,
                               ),
                               maxLines: 2,
@@ -164,7 +173,6 @@ class _StockItemCardState extends State<StockItemCard> with SingleTickerProvider
                       ),
                     ),
 
-                    // Остаток (большой и заметный)
                     Column(
                       mainAxisAlignment: MainAxisAlignment.center,
                       crossAxisAlignment: CrossAxisAlignment.end,
@@ -177,9 +185,15 @@ class _StockItemCardState extends State<StockItemCard> with SingleTickerProvider
                         ),
                         const SizedBox(height: 4),
                         Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 12,
+                            vertical: 6,
+                          ),
                           decoration: BoxDecoration(
-                            color: _getQuantityColor(qty, colorScheme).withOpacity(0.12),
+                            color: _getQuantityColor(
+                              qty,
+                              colorScheme,
+                            ).withOpacity(0.12),
                             borderRadius: BorderRadius.circular(12),
                           ),
                           child: Text(

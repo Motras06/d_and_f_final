@@ -5,7 +5,8 @@ class ReturnedDeliveriesScreen extends StatefulWidget {
   const ReturnedDeliveriesScreen({super.key});
 
   @override
-  State<ReturnedDeliveriesScreen> createState() => _ReturnedDeliveriesScreenState();
+  State<ReturnedDeliveriesScreen> createState() =>
+      _ReturnedDeliveriesScreenState();
 }
 
 class _ReturnedDeliveriesScreenState extends State<ReturnedDeliveriesScreen> {
@@ -63,7 +64,10 @@ class _ReturnedDeliveriesScreenState extends State<ReturnedDeliveriesScreen> {
 
       final formatted = deliveries.map((d) {
         final items = d['delivery_items'] as List<dynamic>? ?? [];
-        final total = items.fold(0, (sum, i) => sum + (i['quantity'] as int? ?? 0));
+        final total = items.fold(
+          0,
+          (sum, i) => sum + (i['quantity'] as int? ?? 0),
+        );
 
         return {
           'id': d['id'],
@@ -105,7 +109,10 @@ class _ReturnedDeliveriesScreenState extends State<ReturnedDeliveriesScreen> {
           'Товары вернутся отправителю, статус изменится на "returned".',
         ),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('Отмена')),
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, false),
+            child: const Text('Отмена'),
+          ),
           TextButton(
             onPressed: () => Navigator.pop(ctx, true),
             child: const Text('Вернуть', style: TextStyle(color: Colors.red)),
@@ -117,10 +124,11 @@ class _ReturnedDeliveriesScreenState extends State<ReturnedDeliveriesScreen> {
     if (confirmed != true) return;
 
     try {
-      // 1. Получаем данные поставки
       final delivery = await supabase
           .from('deliveries')
-          .select('supplier_id, store_name, delivery_items(product_id, quantity)')
+          .select(
+            'supplier_id, store_name, delivery_items(product_id, quantity)',
+          )
           .eq('id', deliveryId)
           .single();
 
@@ -130,7 +138,6 @@ class _ReturnedDeliveriesScreenState extends State<ReturnedDeliveriesScreen> {
 
       if (supplierId == null) throw Exception('Нет отправителя');
 
-      // 2. Находим магазин отправителя
       final supplierStoreRes = await supabase
           .from('store_assignments')
           .select('store_name')
@@ -141,19 +148,16 @@ class _ReturnedDeliveriesScreenState extends State<ReturnedDeliveriesScreen> {
       final supplierStore = supplierStoreRes?['store_name'] as String?;
       if (supplierStore == null) throw Exception('У отправителя нет магазина');
 
-      // 3. Возврат товаров
       for (final item in items) {
         final productId = item['product_id'] as int;
         final qty = item['quantity'] as int;
 
-        // +qty отправителю
         await supabase.from('store_stock').upsert({
           'store_name': supplierStore,
           'product_id': productId,
           'quantity': qty,
         }, onConflict: 'store_name,product_id');
 
-        // -qty получателю (если товары уже были зачислены)
         final receiverStock = await supabase
             .from('store_stock')
             .select('quantity')
@@ -179,7 +183,6 @@ class _ReturnedDeliveriesScreenState extends State<ReturnedDeliveriesScreen> {
         }
       }
 
-      // 4. Меняем статус на 'returned'
       await supabase
           .from('deliveries')
           .update({'status': 'returned'})
@@ -187,7 +190,7 @@ class _ReturnedDeliveriesScreenState extends State<ReturnedDeliveriesScreen> {
 
       _showSnack('Поставка возвращена отправителю', isSuccess: true);
 
-      if (mounted) Navigator.pop(context); // закрываем экран возвратов
+      if (mounted) Navigator.pop(context);
     } catch (e) {
       _showSnack('Ошибка возврата: $e', isError: true);
     }
@@ -197,7 +200,9 @@ class _ReturnedDeliveriesScreenState extends State<ReturnedDeliveriesScreen> {
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: Text(msg),
-        backgroundColor: isError ? Colors.red : (isSuccess ? Colors.green : null),
+        backgroundColor: isError
+            ? Colors.red
+            : (isSuccess ? Colors.green : null),
       ),
     );
   }
@@ -217,38 +222,55 @@ class _ReturnedDeliveriesScreenState extends State<ReturnedDeliveriesScreen> {
       body: isLoading
           ? const Center(child: CircularProgressIndicator())
           : errorMessage != null
-              ? Center(child: Text(errorMessage!, style: const TextStyle(color: Colors.red)))
-              : acceptedDeliveries.isEmpty
-                  ? Center(
-                      child: Column(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          Icon(Icons.inventory_2_outlined, size: 100, color: Colors.grey[600]),
-                          const SizedBox(height: 24),
-                          const Text('Нет принятых поставок для возврата', style: TextStyle(fontSize: 20)),
-                        ],
-                      ),
-                    )
-                  : ListView.builder(
-                      padding: const EdgeInsets.all(16),
-                      itemCount: acceptedDeliveries.length,
-                      itemBuilder: (context, index) {
-                        final d = acceptedDeliveries[index];
-                        return Card(
-                          margin: const EdgeInsets.only(bottom: 12),
-                          child: ListTile(
-                            leading: const Icon(Icons.local_shipping, color: Colors.orange),
-                            title: Text('Поставка #${d['id']}'),
-                            subtitle: Text('Товаров: ${d['total_items']} • ${d['created_at'].toString().substring(0, 10)}'),
-                            trailing: IconButton(
-                              icon: const Icon(Icons.undo, color: Colors.red),
-                              onPressed: () => _returnDelivery(d['id']),
-                              tooltip: 'Вернуть поставку',
-                            ),
-                          ),
-                        );
-                      },
+          ? Center(
+              child: Text(
+                errorMessage!,
+                style: const TextStyle(color: Colors.red),
+              ),
+            )
+          : acceptedDeliveries.isEmpty
+          ? Center(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Icon(
+                    Icons.inventory_2_outlined,
+                    size: 100,
+                    color: Colors.grey[600],
+                  ),
+                  const SizedBox(height: 24),
+                  const Text(
+                    'Нет принятых поставок для возврата',
+                    style: TextStyle(fontSize: 20),
+                  ),
+                ],
+              ),
+            )
+          : ListView.builder(
+              padding: const EdgeInsets.all(16),
+              itemCount: acceptedDeliveries.length,
+              itemBuilder: (context, index) {
+                final d = acceptedDeliveries[index];
+                return Card(
+                  margin: const EdgeInsets.only(bottom: 12),
+                  child: ListTile(
+                    leading: const Icon(
+                      Icons.local_shipping,
+                      color: Colors.orange,
                     ),
+                    title: Text('Поставка #${d['id']}'),
+                    subtitle: Text(
+                      'Товаров: ${d['total_items']} • ${d['created_at'].toString().substring(0, 10)}',
+                    ),
+                    trailing: IconButton(
+                      icon: const Icon(Icons.undo, color: Colors.red),
+                      onPressed: () => _returnDelivery(d['id']),
+                      tooltip: 'Вернуть поставку',
+                    ),
+                  ),
+                );
+              },
+            ),
     );
   }
 }

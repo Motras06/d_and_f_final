@@ -12,7 +12,7 @@ class AssignStoresScreen extends StatefulWidget {
 class _AssignStoresScreenState extends State<AssignStoresScreen> {
   List<Profile> _users = [];
   List<String> _allStores = [];
-  Map<String, List<String>> _userStores = {}; 
+  Map<String, List<String>> _userStores = {};
   bool _isLoading = true;
 
   @override
@@ -27,16 +27,25 @@ class _AssignStoresScreenState extends State<AssignStoresScreen> {
     try {
       final supabase = Supabase.instance.client;
 
-      final usersResponse = await supabase.from('profiles').select('id, mail, username, role');
+      final usersResponse = await supabase
+          .from('profiles')
+          .select('id, mail, username, role');
 
       final users = (usersResponse as List<dynamic>)
           .map((json) => Profile.fromJson(json as Map<String, dynamic>))
           .toList();
 
-      final storesResponse = await supabase.from('stores').select('name').order('name');
-      final stores = (storesResponse as List<dynamic>).map((e) => e['name'] as String).toList();
+      final storesResponse = await supabase
+          .from('stores')
+          .select('name')
+          .order('name');
+      final stores = (storesResponse as List<dynamic>)
+          .map((e) => e['name'] as String)
+          .toList();
 
-      final assignmentsResponse = await supabase.from('store_assignments').select('user_id, store_name');
+      final assignmentsResponse = await supabase
+          .from('store_assignments')
+          .select('user_id, store_name');
       final Map<String, List<String>> assignments = {};
       for (final a in assignmentsResponse) {
         final userId = a['user_id'] as String;
@@ -52,7 +61,10 @@ class _AssignStoresScreenState extends State<AssignStoresScreen> {
       });
     } catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Ошибка загрузки: $e'), backgroundColor: Colors.red),
+        SnackBar(
+          content: Text('Ошибка загрузки: $e'),
+          backgroundColor: Colors.red,
+        ),
       );
       setState(() => _isLoading = false);
     }
@@ -71,7 +83,10 @@ class _AssignStoresScreenState extends State<AssignStoresScreen> {
       });
 
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Магазин закреплён'), backgroundColor: Colors.green),
+        const SnackBar(
+          content: Text('Магазин закреплён'),
+          backgroundColor: Colors.green,
+        ),
       );
     } catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -94,7 +109,10 @@ class _AssignStoresScreenState extends State<AssignStoresScreen> {
       });
 
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Магазин отвязан'), backgroundColor: Colors.orange),
+        const SnackBar(
+          content: Text('Магазин отвязан'),
+          backgroundColor: Colors.orange,
+        ),
       );
     } catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -124,7 +142,10 @@ class _AssignStoresScreenState extends State<AssignStoresScreen> {
             onChanged: (value) => selectedStore = value,
           ),
           actions: [
-            TextButton(onPressed: () => Navigator.pop(context), child: const Text('Отмена')),
+            TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: const Text('Отмена'),
+            ),
             ElevatedButton(
               onPressed: selectedStore == null
                   ? null
@@ -143,15 +164,11 @@ class _AssignStoresScreenState extends State<AssignStoresScreen> {
   @override
   Widget build(BuildContext context) {
     if (_isLoading) {
-      return const Scaffold(
-        body: Center(child: CircularProgressIndicator()),
-      );
+      return const Scaffold(body: Center(child: CircularProgressIndicator()));
     }
 
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('Закрепление магазинов'),
-      ),
+      appBar: AppBar(title: const Text('Закрепление магазинов')),
       body: ListView.builder(
         padding: const EdgeInsets.all(16),
         itemCount: _users.length,
@@ -164,15 +181,19 @@ class _AssignStoresScreenState extends State<AssignStoresScreen> {
             child: ExpansionTile(
               leading: CircleAvatar(child: Text(user.mail[0].toUpperCase())),
               title: Text(user.mail),
-              subtitle: Text('Роль: ${user.role} • Магазинов: ${assignedStores.length}'),
+              subtitle: Text(
+                'Роль: ${user.role} • Магазинов: ${assignedStores.length}',
+              ),
               children: [
-                ...assignedStores.map((store) => ListTile(
-                      title: Text(store),
-                      trailing: IconButton(
-                        icon: const Icon(Icons.remove_circle, color: Colors.red),
-                        onPressed: () => _unassignStore(user.id, store),
-                      ),
-                    )),
+                ...assignedStores.map(
+                  (store) => ListTile(
+                    title: Text(store),
+                    trailing: IconButton(
+                      icon: const Icon(Icons.remove_circle, color: Colors.red),
+                      onPressed: () => _unassignStore(user.id, store),
+                    ),
+                  ),
+                ),
                 ListTile(
                   title: const Text('Добавить магазин'),
                   leading: const Icon(Icons.add, color: Colors.green),

@@ -1,12 +1,7 @@
-enum AppRole {
-  supplier,      
-  hall,         
-  storage,      
-  admin,         
-}
+enum AppRole { supplier, hall, storage, admin }
 
 String appRoleToString(AppRole role) {
-  return role.name; 
+  return role.name;
 }
 
 AppRole? stringToAppRole(String role) {

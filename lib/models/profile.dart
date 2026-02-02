@@ -1,8 +1,8 @@
 class Profile {
-  final String id;         
-  final String mail;        
-  final String? username;   
-  final String role;        
+  final String id;
+  final String mail;
+  final String? username;
+  final String role;
   final DateTime createdAt;
 
   Profile({

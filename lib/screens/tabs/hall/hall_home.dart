@@ -14,7 +14,8 @@ class HallHome extends StatefulWidget {
   State<HallHome> createState() => _HallHomeState();
 }
 
-class _HallHomeState extends State<HallHome> with SingleTickerProviderStateMixin {
+class _HallHomeState extends State<HallHome>
+    with SingleTickerProviderStateMixin {
   int _selectedIndex = 0;
   late List<Widget> _pages;
 
@@ -57,7 +58,10 @@ class _HallHomeState extends State<HallHome> with SingleTickerProviderStateMixin
       PageRouteBuilder(
         pageBuilder: (_, __, ___) => const SettingsScreen(),
         transitionsBuilder: (_, animation, __, child) => SlideTransition(
-          position: Tween<Offset>(begin: const Offset(1.0, 0.0), end: Offset.zero).animate(animation),
+          position: Tween<Offset>(
+            begin: const Offset(1.0, 0.0),
+            end: Offset.zero,
+          ).animate(animation),
           child: child,
         ),
       ),
@@ -93,7 +97,10 @@ class _HallHomeState extends State<HallHome> with SingleTickerProviderStateMixin
                 begin: Alignment.topCenter,
                 end: Alignment.bottomCenter,
                 colors: isDark
-                    ? [theme.colorScheme.background, theme.colorScheme.background.withOpacity(0.8)]
+                    ? [
+                        theme.colorScheme.background,
+                        theme.colorScheme.background.withOpacity(0.8),
+                      ]
                     : [Colors.blue[50]!, Colors.white],
               ),
             ),
@@ -101,7 +108,8 @@ class _HallHomeState extends State<HallHome> with SingleTickerProviderStateMixin
 
           AnimatedSwitcher(
             duration: const Duration(milliseconds: 400),
-            transitionBuilder: (child, animation) => FadeTransition(opacity: animation, child: child),
+            transitionBuilder: (child, animation) =>
+                FadeTransition(opacity: animation, child: child),
             child: Padding(
               key: ValueKey<int>(_selectedIndex),
               padding: const EdgeInsets.only(top: 5.0),
@@ -128,7 +136,10 @@ class _HallHomeState extends State<HallHome> with SingleTickerProviderStateMixin
           ),
           BottomNavigationBarItem(
             icon: Icon(Icons.camera_alt_outlined),
-            activeIcon: Icon(Icons.camera_alt, color: theme.colorScheme.primary),
+            activeIcon: Icon(
+              Icons.camera_alt,
+              color: theme.colorScheme.primary,
+            ),
             label: 'Камера',
           ),
           BottomNavigationBarItem(

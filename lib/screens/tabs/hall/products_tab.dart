@@ -13,15 +13,14 @@ class HallProduct {
   final String? imageUrl;
   final String? about;
   final int quantity;
-  
-  // Новые поля — все опциональные, чтобы код не падал
+
   final num? priceWithVat;
   final num? vatRate;
   final num? vatAmount;
   final String? unitOfMeasure;
   final String? createdAt;
-  final String? createdBy;      // uuid → можно показывать как строку
-  final String? supplierId;     // uuid поставщика
+  final String? createdBy;
+  final String? supplierId;
 
   HallProduct({
     required this.productId,
@@ -86,9 +85,13 @@ class _ProductsTabState extends State<ProductsTab>
       CurvedAnimation(parent: _animationController, curve: Curves.easeInOut),
     );
 
-    _slideAnimation = Tween<Offset>(begin: const Offset(0, 0.3), end: Offset.zero).animate(
-      CurvedAnimation(parent: _animationController, curve: Curves.easeOutCubic),
-    );
+    _slideAnimation =
+        Tween<Offset>(begin: const Offset(0, 0.3), end: Offset.zero).animate(
+          CurvedAnimation(
+            parent: _animationController,
+            curve: Curves.easeOutCubic,
+          ),
+        );
 
     _animationController.forward();
   }
@@ -124,7 +127,6 @@ class _ProductsTabState extends State<ProductsTab>
       final currentStore = assignment['store_name'] as String;
       setState(() => storeName = currentStore);
 
-      // Расширяем запрос — берём ВСЕ нужные поля из products
       final stockResponse = await supabase
           .from('store_stock')
           .select('''
@@ -164,7 +166,6 @@ class _ProductsTabState extends State<ProductsTab>
             imageUrl: productJson['image_url'] as String?,
             about: productJson['about'] as String?,
             quantity: (row['quantity'] as num).toInt(),
-            // Новые поля — безопасно
             priceWithVat: productJson['price_with_vat'] as num?,
             vatRate: productJson['vat_rate'] as num?,
             vatAmount: productJson['vat_amount'] as num?,
@@ -202,7 +203,6 @@ class _ProductsTabState extends State<ProductsTab>
   }
 
   void _showProductDetails(HallProduct product) {
-    // Безопасное извлечение всех полей
     final name = product.name;
     final country = product.country;
     final price = product.price.toStringAsFixed(2);
@@ -217,11 +217,7 @@ class _ProductsTabState extends State<ProductsTab>
         : '—';
 
     final qty = product.quantity;
-    final qtyColor = qty > 10
-        ? Colors.green
-        : (qty > 0 ? Colors.orange : Colors.red);
 
-    // QR-код с максимумом данных
     final safeProduct = {
       'id': product.productId,
       'name': name,
@@ -327,10 +323,11 @@ class _ProductsTabState extends State<ProductsTab>
 
                 const SizedBox(height: 24),
 
-                // Блок характеристик
                 Card(
                   elevation: 2,
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(16),
+                  ),
                   child: Padding(
                     padding: const EdgeInsets.all(16),
                     child: Column(
@@ -338,19 +335,38 @@ class _ProductsTabState extends State<ProductsTab>
                       children: [
                         Text(
                           'Характеристики',
-                          style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                            fontWeight: FontWeight.bold,
-                          ),
+                          style: Theme.of(context).textTheme.titleMedium
+                              ?.copyWith(fontWeight: FontWeight.bold),
                         ),
                         const SizedBox(height: 12),
                         _infoRow(Icons.flag_outlined, 'Страна', country),
-                        _infoRow(Icons.monetization_on_outlined, 'Цена без НДС', '$price BYN'),
-                        _infoRow(Icons.price_check, 'Цена с НДС', '$priceWithVat BYN'),
+                        _infoRow(
+                          Icons.monetization_on_outlined,
+                          'Цена без НДС',
+                          '$price BYN',
+                        ),
+                        _infoRow(
+                          Icons.price_check,
+                          'Цена с НДС',
+                          '$priceWithVat BYN',
+                        ),
                         _infoRow(Icons.percent, 'Ставка НДС', '$vatRate%'),
-                        _infoRow(Icons.attach_money, 'Сумма НДС', '$vatAmount BYN'),
+                        _infoRow(
+                          Icons.attach_money,
+                          'Сумма НДС',
+                          '$vatAmount BYN',
+                        ),
                         _infoRow(Icons.straighten, 'Ед. измерения', unit),
-                        _infoRow(Icons.calendar_today_outlined, 'Добавлен', createdAt),
-                        _infoRow(Icons.inventory_2_outlined, 'В наличии', '$qty шт.'),
+                        _infoRow(
+                          Icons.calendar_today_outlined,
+                          'Добавлен',
+                          createdAt,
+                        ),
+                        _infoRow(
+                          Icons.inventory_2_outlined,
+                          'В наличии',
+                          '$qty шт.',
+                        ),
                       ],
                     ),
                   ),
@@ -358,11 +374,12 @@ class _ProductsTabState extends State<ProductsTab>
 
                 const SizedBox(height: 16),
 
-                // Описание
                 if (about != null && about.isNotEmpty)
                   Card(
                     elevation: 2,
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(16),
+                    ),
                     child: Padding(
                       padding: const EdgeInsets.all(16),
                       child: Column(
@@ -370,12 +387,11 @@ class _ProductsTabState extends State<ProductsTab>
                         children: [
                           Text(
                             'Описание',
-                            style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                              fontWeight: FontWeight.bold,
-                            ),
+                            style: Theme.of(context).textTheme.titleMedium
+                                ?.copyWith(fontWeight: FontWeight.bold),
                           ),
                           const SizedBox(height: 8),
-                          Text(about!),
+                          Text(about),
                         ],
                       ),
                     ),
@@ -407,15 +423,9 @@ class _ProductsTabState extends State<ProductsTab>
           Icon(icon, size: 20, color: Colors.grey[600]),
           const SizedBox(width: 12),
           Expanded(
-            child: Text(
-              label,
-              style: const TextStyle(color: Colors.grey),
-            ),
+            child: Text(label, style: const TextStyle(color: Colors.grey)),
           ),
-          Text(
-            value,
-            style: const TextStyle(fontWeight: FontWeight.w600),
-          ),
+          Text(value, style: const TextStyle(fontWeight: FontWeight.w600)),
         ],
       ),
     );
@@ -438,203 +448,308 @@ class _ProductsTabState extends State<ProductsTab>
               onRefresh: loadProducts,
               color: theme.colorScheme.primary,
               child: isLoading
-                  ? Center(child: CircularProgressIndicator(color: theme.colorScheme.primary))
+                  ? Center(
+                      child: CircularProgressIndicator(
+                        color: theme.colorScheme.primary,
+                      ),
+                    )
                   : errorMessage != null
-                      ? Center(
-                          child: Column(
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            children: [
-                              Icon(Icons.error_outline, size: 80, color: theme.colorScheme.error),
-                              const SizedBox(height: 24),
-                              Text(errorMessage!, style: const TextStyle(fontSize: 18)),
-                            ],
+                  ? Center(
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Icon(
+                            Icons.error_outline,
+                            size: 80,
+                            color: theme.colorScheme.error,
                           ),
-                        )
-                      : filteredProducts.isEmpty
-                          ? Center(
-                              child: Column(
+                          const SizedBox(height: 24),
+                          Text(
+                            errorMessage!,
+                            style: const TextStyle(fontSize: 18),
+                          ),
+                        ],
+                      ),
+                    )
+                  : filteredProducts.isEmpty
+                  ? Center(
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Icon(
+                            Icons.inventory_2_outlined,
+                            size: 100,
+                            color: Colors.grey[600],
+                          ),
+                          const SizedBox(height: 24),
+                          const Text(
+                            'Нет товаров в наличии',
+                            style: TextStyle(
+                              fontSize: 24,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                          const SizedBox(height: 12),
+                          Text(
+                            'Товары появятся после приёмки поставок',
+                            style: TextStyle(
+                              fontSize: 16,
+                              color: Colors.grey[600],
+                            ),
+                          ),
+                        ],
+                      ),
+                    )
+                  : Column(
+                      children: [
+                        Padding(
+                          padding: const EdgeInsets.all(20.0),
+                          child: Card(
+                            elevation: 6,
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(24),
+                            ),
+                            color: theme.cardColor,
+                            child: Padding(
+                              padding: const EdgeInsets.symmetric(vertical: 20),
+                              child: Row(
                                 mainAxisAlignment: MainAxisAlignment.center,
                                 children: [
-                                  Icon(Icons.inventory_2_outlined, size: 100, color: Colors.grey[600]),
-                                  const SizedBox(height: 24),
-                                  const Text(
-                                    'Нет товаров в наличии',
-                                    style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
+                                  Icon(
+                                    Icons.store_mall_directory_outlined,
+                                    size: 32,
+                                    color: theme.colorScheme.primary,
                                   ),
-                                  const SizedBox(height: 12),
+                                  const SizedBox(width: 16),
                                   Text(
-                                    'Товары появятся после приёмки поставок',
-                                    style: TextStyle(fontSize: 16, color: Colors.grey[600]),
+                                    'Магазин: $storeName',
+                                    style: theme.textTheme.titleLarge?.copyWith(
+                                      fontWeight: FontWeight.bold,
+                                    ),
                                   ),
                                 ],
                               ),
-                            )
-                          : Column(
-                              children: [
-                                Padding(
-                                  padding: const EdgeInsets.all(20.0),
-                                  child: Card(
-                                    elevation: 6,
-                                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
-                                    color: theme.cardColor,
-                                    child: Padding(
-                                      padding: const EdgeInsets.symmetric(vertical: 20),
-                                      child: Row(
-                                        mainAxisAlignment: MainAxisAlignment.center,
-                                        children: [
-                                          Icon(Icons.store_mall_directory_outlined, size: 32, color: theme.colorScheme.primary),
-                                          const SizedBox(width: 16),
-                                          Text(
-                                            'Магазин: $storeName',
-                                            style: theme.textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold),
+                            ),
+                          ),
+                        ),
+
+                        Padding(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 16.0,
+                            vertical: 8.0,
+                          ),
+                          child: SearchBar(
+                            controller: _searchController,
+                            hintText: 'Поиск по названию...',
+                            elevation: const WidgetStatePropertyAll(6),
+                            backgroundColor: WidgetStatePropertyAll(
+                              theme.cardColor,
+                            ),
+                            shadowColor: WidgetStatePropertyAll(
+                              theme.shadowColor.withOpacity(0.3),
+                            ),
+                            surfaceTintColor: const WidgetStatePropertyAll(
+                              Colors.transparent,
+                            ),
+                            shape: const WidgetStatePropertyAll(
+                              RoundedRectangleBorder(
+                                borderRadius: BorderRadius.all(
+                                  Radius.circular(24),
+                                ),
+                              ),
+                            ),
+                            padding: const WidgetStatePropertyAll(
+                              EdgeInsets.symmetric(horizontal: 16),
+                            ),
+                            leading: Icon(
+                              Icons.search,
+                              color: theme.colorScheme.primary,
+                            ),
+                            trailing: _searchQuery.isNotEmpty
+                                ? [
+                                    IconButton(
+                                      icon: const Icon(Icons.clear),
+                                      onPressed: _searchController.clear,
+                                    ),
+                                  ]
+                                : null,
+                          ),
+                        ),
+
+                        Expanded(
+                          child: ListView.builder(
+                            padding: const EdgeInsets.symmetric(horizontal: 16),
+                            itemCount: filteredProducts.length,
+                            itemBuilder: (context, index) {
+                              final product = filteredProducts[index];
+
+                              return AnimatedContainer(
+                                duration: const Duration(milliseconds: 300),
+                                curve: Curves.easeInOut,
+                                margin: const EdgeInsets.only(bottom: 16),
+                                child: Card(
+                                  elevation: 8,
+                                  shape: RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(24),
+                                  ),
+                                  color: theme.cardColor,
+                                  shadowColor: theme.shadowColor.withOpacity(
+                                    0.3,
+                                  ),
+                                  child: ClipRRect(
+                                    borderRadius: BorderRadius.circular(24),
+                                    child: Material(
+                                      color: Colors.transparent,
+                                      child: InkWell(
+                                        onTap: () =>
+                                            _showProductDetails(product),
+                                        splashColor: theme.colorScheme.primary
+                                            .withOpacity(0.1),
+                                        child: Padding(
+                                          padding: const EdgeInsets.all(20.0),
+                                          child: Row(
+                                            children: [
+                                              Container(
+                                                width: 80,
+                                                height: 80,
+                                                decoration: BoxDecoration(
+                                                  borderRadius:
+                                                      BorderRadius.circular(20),
+                                                  boxShadow: [
+                                                    BoxShadow(
+                                                      color: Colors.black
+                                                          .withOpacity(
+                                                            isDark ? 0.4 : 0.1,
+                                                          ),
+                                                      blurRadius: 8,
+                                                      offset: const Offset(
+                                                        0,
+                                                        4,
+                                                      ),
+                                                    ),
+                                                  ],
+                                                ),
+                                                child: ClipRRect(
+                                                  borderRadius:
+                                                      BorderRadius.circular(20),
+                                                  child:
+                                                      product.imageUrl != null
+                                                      ? Image.network(
+                                                          product.imageUrl!,
+                                                          fit: BoxFit.cover,
+                                                          errorBuilder:
+                                                              (
+                                                                _,
+                                                                __,
+                                                                ___,
+                                                              ) => Icon(
+                                                                Icons
+                                                                    .inventory_2_outlined,
+                                                                size: 40,
+                                                                color: theme
+                                                                    .colorScheme
+                                                                    .primary,
+                                                              ),
+                                                        )
+                                                      : Icon(
+                                                          Icons
+                                                              .inventory_2_outlined,
+                                                          size: 40,
+                                                          color: theme
+                                                              .colorScheme
+                                                              .primary,
+                                                        ),
+                                                ),
+                                              ),
+                                              const SizedBox(width: 20),
+
+                                              Expanded(
+                                                child: Column(
+                                                  crossAxisAlignment:
+                                                      CrossAxisAlignment.start,
+                                                  children: [
+                                                    Text(
+                                                      product.name,
+                                                      style: theme
+                                                          .textTheme
+                                                          .titleLarge
+                                                          ?.copyWith(
+                                                            fontWeight:
+                                                                FontWeight.bold,
+                                                          ),
+                                                    ),
+                                                    const SizedBox(height: 8),
+                                                    Text(
+                                                      '${product.country} • ${product.price} ₽',
+                                                      style: theme
+                                                          .textTheme
+                                                          .bodyLarge,
+                                                    ),
+                                                    if (product.about != null &&
+                                                        product
+                                                            .about!
+                                                            .isNotEmpty)
+                                                      Text(
+                                                        product.about!,
+                                                        style: theme
+                                                            .textTheme
+                                                            .bodyMedium,
+                                                        maxLines: 2,
+                                                        overflow: TextOverflow
+                                                            .ellipsis,
+                                                      ),
+                                                  ],
+                                                ),
+                                              ),
+
+                                              Column(
+                                                crossAxisAlignment:
+                                                    CrossAxisAlignment.end,
+                                                children: [
+                                                  Text(
+                                                    'В наличии',
+                                                    style: TextStyle(
+                                                      color: theme
+                                                          .colorScheme
+                                                          .onSurface
+                                                          .withOpacity(0.7),
+                                                    ),
+                                                  ),
+                                                  Text(
+                                                    '${product.quantity} шт.',
+                                                    style: theme
+                                                        .textTheme
+                                                        .headlineMedium
+                                                        ?.copyWith(
+                                                          fontWeight:
+                                                              FontWeight.bold,
+                                                          color:
+                                                              product.quantity >
+                                                                  10
+                                                              ? Colors.green
+                                                              : (product.quantity >
+                                                                        0
+                                                                    ? Colors
+                                                                          .orange
+                                                                    : Colors
+                                                                          .red),
+                                                        ),
+                                                  ),
+                                                ],
+                                              ),
+                                            ],
                                           ),
-                                        ],
+                                        ),
                                       ),
                                     ),
                                   ),
                                 ),
-
-                                Padding(
-                                  padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
-                                  child: SearchBar(
-                                    controller: _searchController,
-                                    hintText: 'Поиск по названию...',
-                                    elevation: const WidgetStatePropertyAll(6),
-                                    backgroundColor: WidgetStatePropertyAll(theme.cardColor),
-                                    shadowColor: WidgetStatePropertyAll(theme.shadowColor.withOpacity(0.3)),
-                                    surfaceTintColor: const WidgetStatePropertyAll(Colors.transparent),
-                                    shape: const WidgetStatePropertyAll(
-                                      RoundedRectangleBorder(borderRadius: BorderRadius.all(Radius.circular(24))),
-                                    ),
-                                    padding: const WidgetStatePropertyAll(EdgeInsets.symmetric(horizontal: 16)),
-                                    leading: Icon(Icons.search, color: theme.colorScheme.primary),
-                                    trailing: _searchQuery.isNotEmpty
-                                        ? [
-                                            IconButton(
-                                              icon: const Icon(Icons.clear),
-                                              onPressed: _searchController.clear,
-                                            ),
-                                          ]
-                                        : null,
-                                  ),
-                                ),
-
-                                Expanded(
-                                  child: ListView.builder(
-                                    padding: const EdgeInsets.symmetric(horizontal: 16),
-                                    itemCount: filteredProducts.length,
-                                    itemBuilder: (context, index) {
-                                      final product = filteredProducts[index];
-
-                                      return AnimatedContainer(
-                                        duration: const Duration(milliseconds: 300),
-                                        curve: Curves.easeInOut,
-                                        margin: const EdgeInsets.only(bottom: 16),
-                                        child: Card(
-                                          elevation: 8,
-                                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
-                                          color: theme.cardColor,
-                                          shadowColor: theme.shadowColor.withOpacity(0.3),
-                                          child: ClipRRect(
-                                            borderRadius: BorderRadius.circular(24),
-                                            child: Material(
-                                              color: Colors.transparent,
-                                              child: InkWell(
-                                                onTap: () => _showProductDetails(product),
-                                                splashColor: theme.colorScheme.primary.withOpacity(0.1),
-                                                child: Padding(
-                                                  padding: const EdgeInsets.all(20.0),
-                                                  child: Row(
-                                                    children: [
-                                                      Container(
-                                                        width: 80,
-                                                        height: 80,
-                                                        decoration: BoxDecoration(
-                                                          borderRadius: BorderRadius.circular(20),
-                                                          boxShadow: [
-                                                            BoxShadow(
-                                                              color: Colors.black.withOpacity(isDark ? 0.4 : 0.1),
-                                                              blurRadius: 8,
-                                                              offset: const Offset(0, 4),
-                                                            ),
-                                                          ],
-                                                        ),
-                                                        child: ClipRRect(
-                                                          borderRadius: BorderRadius.circular(20),
-                                                          child: product.imageUrl != null
-                                                              ? Image.network(
-                                                                  product.imageUrl!,
-                                                                  fit: BoxFit.cover,
-                                                                  errorBuilder: (_, __, ___) => Icon(
-                                                                    Icons.inventory_2_outlined,
-                                                                    size: 40,
-                                                                    color: theme.colorScheme.primary,
-                                                                  ),
-                                                                )
-                                                              : Icon(
-                                                                  Icons.inventory_2_outlined,
-                                                                  size: 40,
-                                                                  color: theme.colorScheme.primary,
-                                                                ),
-                                                        ),
-                                                      ),
-                                                      const SizedBox(width: 20),
-
-                                                      Expanded(
-                                                        child: Column(
-                                                          crossAxisAlignment: CrossAxisAlignment.start,
-                                                          children: [
-                                                            Text(
-                                                              product.name,
-                                                              style: theme.textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold),
-                                                            ),
-                                                            const SizedBox(height: 8),
-                                                            Text(
-                                                              '${product.country} • ${product.price} ₽',
-                                                              style: theme.textTheme.bodyLarge,
-                                                            ),
-                                                            if (product.about != null && product.about!.isNotEmpty)
-                                                              Text(
-                                                                product.about!,
-                                                                style: theme.textTheme.bodyMedium,
-                                                                maxLines: 2,
-                                                                overflow: TextOverflow.ellipsis,
-                                                              ),
-                                                          ],
-                                                        ),
-                                                      ),
-
-                                                      Column(
-                                                        crossAxisAlignment: CrossAxisAlignment.end,
-                                                        children: [
-                                                          Text(
-                                                            'В наличии',
-                                                            style: TextStyle(color: theme.colorScheme.onSurface.withOpacity(0.7)),
-                                                          ),
-                                                          Text(
-                                                            '${product.quantity} шт.',
-                                                            style: theme.textTheme.headlineMedium?.copyWith(
-                                                              fontWeight: FontWeight.bold,
-                                                              color: product.quantity > 10
-                                                                  ? Colors.green
-                                                                  : (product.quantity > 0 ? Colors.orange : Colors.red),
-                                                            ),
-                                                          ),
-                                                        ],
-                                                      ),
-                                                    ],
-                                                  ),
-                                                ),
-                                              ),
-                                            ),
-                                          ),
-                                        ),
-                                      );
-                                    },
-                                  ),
-                                ),
-                              ],
-                            ),
+                              );
+                            },
+                          ),
+                        ),
+                      ],
+                    ),
             ),
           ),
         ),

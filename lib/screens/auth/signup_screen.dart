@@ -17,7 +17,8 @@ class SignupScreen extends StatefulWidget {
   State<SignupScreen> createState() => _SignupScreenState();
 }
 
-class _SignupScreenState extends State<SignupScreen> with SingleTickerProviderStateMixin {
+class _SignupScreenState extends State<SignupScreen>
+    with SingleTickerProviderStateMixin {
   final _formKey = GlobalKey<FormState>();
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
@@ -36,7 +37,10 @@ class _SignupScreenState extends State<SignupScreen> with SingleTickerProviderSt
   String? _validateEmail(String? v) {
     if (v == null || v.trim().isEmpty) return 'Введите email';
     final email = v.trim();
-    if (!email.contains('@') || !email.contains('.') || email.endsWith('.') || email.startsWith('@')) {
+    if (!email.contains('@') ||
+        !email.contains('.') ||
+        email.endsWith('.') ||
+        email.startsWith('@')) {
       return 'Неверный формат email';
     }
     return null;
@@ -102,9 +106,9 @@ class _SignupScreenState extends State<SignupScreen> with SingleTickerProviderSt
 
   Future<void> _submit() async {
     if (_selectedRole == null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Выберите роль')),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text('Выберите роль')));
       return;
     }
 
@@ -115,7 +119,9 @@ class _SignupScreenState extends State<SignupScreen> with SingleTickerProviderSt
     final error = await _authService.signUp(
       email: _emailController.text.trim(),
       password: _passwordController.text,
-      username: _usernameController.text.trim().isEmpty ? null : _usernameController.text.trim(),
+      username: _usernameController.text.trim().isEmpty
+          ? null
+          : _usernameController.text.trim(),
       role: _selectedRole!,
     );
 
@@ -129,7 +135,9 @@ class _SignupScreenState extends State<SignupScreen> with SingleTickerProviderSt
           content: Text(error),
           backgroundColor: Theme.of(context).colorScheme.error,
           behavior: SnackBarBehavior.floating,
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(12),
+          ),
         ),
       );
       return;
@@ -163,9 +171,13 @@ class _SignupScreenState extends State<SignupScreen> with SingleTickerProviderSt
       CurvedAnimation(parent: _animationController, curve: Curves.easeInOut),
     );
 
-    _slideAnimation = Tween<Offset>(begin: const Offset(0, 0.5), end: Offset.zero).animate(
-      CurvedAnimation(parent: _animationController, curve: Curves.easeInOutCubic),
-    );
+    _slideAnimation =
+        Tween<Offset>(begin: const Offset(0, 0.5), end: Offset.zero).animate(
+          CurvedAnimation(
+            parent: _animationController,
+            curve: Curves.easeInOutCubic,
+          ),
+        );
 
     _animationController.forward();
   }
@@ -202,7 +214,9 @@ class _SignupScreenState extends State<SignupScreen> with SingleTickerProviderSt
                 opacity: _fadeAnimation,
                 child: Card(
                   elevation: 12.0,
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24.0)),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(24.0),
+                  ),
                   color: theme.cardColor,
                   child: Padding(
                     padding: const EdgeInsets.all(32.0),
@@ -229,15 +243,27 @@ class _SignupScreenState extends State<SignupScreen> with SingleTickerProviderSt
                             width: double.infinity,
                             child: OutlinedButton.icon(
                               onPressed: _selectRole,
-                              icon: Icon(_selectedRole == null ? Icons.person_outline : Icons.check_circle),
+                              icon: Icon(
+                                _selectedRole == null
+                                    ? Icons.person_outline
+                                    : Icons.check_circle,
+                              ),
                               label: Text(
-                                _selectedRole == null ? 'Выберите роль' : 'Роль: ${_selectedRole!.name}',
+                                _selectedRole == null
+                                    ? 'Выберите роль'
+                                    : 'Роль: ${_selectedRole!.name}',
                                 style: TextStyle(fontSize: 16),
                               ),
                               style: OutlinedButton.styleFrom(
-                                padding: const EdgeInsets.symmetric(vertical: 16),
-                                side: BorderSide(color: theme.colorScheme.primary),
-                                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                                padding: const EdgeInsets.symmetric(
+                                  vertical: 16,
+                                ),
+                                side: BorderSide(
+                                  color: theme.colorScheme.primary,
+                                ),
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(16),
+                                ),
                               ),
                             ),
                           ),
@@ -247,14 +273,24 @@ class _SignupScreenState extends State<SignupScreen> with SingleTickerProviderSt
                             controller: _usernameController,
                             decoration: InputDecoration(
                               labelText: 'Имя (необязательно)',
-                              prefixIcon: Icon(Icons.person_outline, color: theme.colorScheme.primary),
-                              border: OutlineInputBorder(borderRadius: BorderRadius.circular(16.0)),
+                              prefixIcon: Icon(
+                                Icons.person_outline,
+                                color: theme.colorScheme.primary,
+                              ),
+                              border: OutlineInputBorder(
+                                borderRadius: BorderRadius.circular(16.0),
+                              ),
                               focusedBorder: OutlineInputBorder(
                                 borderRadius: BorderRadius.circular(16.0),
-                                borderSide: BorderSide(color: theme.colorScheme.primary, width: 2.0),
+                                borderSide: BorderSide(
+                                  color: theme.colorScheme.primary,
+                                  width: 2.0,
+                                ),
                               ),
                               filled: true,
-                              fillColor: theme.colorScheme.surface.withOpacity(0.1),
+                              fillColor: theme.colorScheme.surface.withOpacity(
+                                0.1,
+                              ),
                             ),
                           ),
                           const SizedBox(height: 16.0),
@@ -264,14 +300,24 @@ class _SignupScreenState extends State<SignupScreen> with SingleTickerProviderSt
                             keyboardType: TextInputType.emailAddress,
                             decoration: InputDecoration(
                               labelText: 'Email',
-                              prefixIcon: Icon(Icons.email_outlined, color: theme.colorScheme.primary),
-                              border: OutlineInputBorder(borderRadius: BorderRadius.circular(16.0)),
+                              prefixIcon: Icon(
+                                Icons.email_outlined,
+                                color: theme.colorScheme.primary,
+                              ),
+                              border: OutlineInputBorder(
+                                borderRadius: BorderRadius.circular(16.0),
+                              ),
                               focusedBorder: OutlineInputBorder(
                                 borderRadius: BorderRadius.circular(16.0),
-                                borderSide: BorderSide(color: theme.colorScheme.primary, width: 2.0),
+                                borderSide: BorderSide(
+                                  color: theme.colorScheme.primary,
+                                  width: 2.0,
+                                ),
                               ),
                               filled: true,
-                              fillColor: theme.colorScheme.surface.withOpacity(0.1),
+                              fillColor: theme.colorScheme.surface.withOpacity(
+                                0.1,
+                              ),
                             ),
                             validator: _validateEmail,
                           ),
@@ -283,25 +329,37 @@ class _SignupScreenState extends State<SignupScreen> with SingleTickerProviderSt
                             maxLength: 12,
                             decoration: InputDecoration(
                               labelText: 'Пароль (8–12 символов)',
-                              prefixIcon: Icon(Icons.vpn_key_outlined, color: theme.colorScheme.primary),
+                              prefixIcon: Icon(
+                                Icons.vpn_key_outlined,
+                                color: theme.colorScheme.primary,
+                              ),
                               suffixIcon: IconButton(
                                 icon: AnimatedSwitcher(
                                   duration: const Duration(milliseconds: 200),
                                   child: Icon(
-                                    _obscurePassword ? Icons.visibility_off : Icons.visibility,
+                                    _obscurePassword
+                                        ? Icons.visibility_off
+                                        : Icons.visibility,
                                     key: ValueKey(_obscurePassword),
                                     color: theme.colorScheme.primary,
                                   ),
                                 ),
                                 onPressed: _togglePasswordVisibility,
                               ),
-                              border: OutlineInputBorder(borderRadius: BorderRadius.circular(16.0)),
+                              border: OutlineInputBorder(
+                                borderRadius: BorderRadius.circular(16.0),
+                              ),
                               focusedBorder: OutlineInputBorder(
                                 borderRadius: BorderRadius.circular(16.0),
-                                borderSide: BorderSide(color: theme.colorScheme.primary, width: 2.0),
+                                borderSide: BorderSide(
+                                  color: theme.colorScheme.primary,
+                                  width: 2.0,
+                                ),
                               ),
                               filled: true,
-                              fillColor: theme.colorScheme.surface.withOpacity(0.1),
+                              fillColor: theme.colorScheme.surface.withOpacity(
+                                0.1,
+                              ),
                               counterText: '',
                             ),
                             validator: _validatePassword,
@@ -315,19 +373,29 @@ class _SignupScreenState extends State<SignupScreen> with SingleTickerProviderSt
                               style: ElevatedButton.styleFrom(
                                 backgroundColor: theme.colorScheme.primary,
                                 foregroundColor: theme.colorScheme.onPrimary,
-                                padding: const EdgeInsets.symmetric(vertical: 16.0),
-                                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16.0)),
+                                padding: const EdgeInsets.symmetric(
+                                  vertical: 16.0,
+                                ),
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(16.0),
+                                ),
                                 elevation: 4.0,
                               ),
                               child: _loading
                                   ? const SizedBox(
                                       height: 24,
                                       width: 24,
-                                      child: CircularProgressIndicator(color: Colors.white, strokeWidth: 3),
+                                      child: CircularProgressIndicator(
+                                        color: Colors.white,
+                                        strokeWidth: 3,
+                                      ),
                                     )
                                   : const Text(
                                       'Зарегистрироваться',
-                                      style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                                      style: TextStyle(
+                                        fontSize: 18,
+                                        fontWeight: FontWeight.bold,
+                                      ),
                                     ),
                             ),
                           ),

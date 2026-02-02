@@ -153,11 +153,14 @@ class _RoleSelectScreenState extends State<RoleSelectScreen>
                                 duration: const Duration(milliseconds: 300),
                                 curve: Curves.easeInOut,
                                 width: 140,
-                                height: 180, // увеличил высоту, чтобы длинные названия помещались
+                                height:
+                                    180, 
                                 decoration: BoxDecoration(
                                   color: isSelected
                                       ? theme.colorScheme.primary
-                                      : theme.colorScheme.surface.withOpacity(0.1),
+                                      : theme.colorScheme.surface.withOpacity(
+                                          0.1,
+                                        ),
                                   borderRadius: BorderRadius.circular(20),
                                   border: Border.all(
                                     color: isSelected
@@ -191,7 +194,8 @@ class _RoleSelectScreenState extends State<RoleSelectScreen>
                                       item.title,
                                       textAlign: TextAlign.center,
                                       style: TextStyle(
-                                        fontSize: 13, // чуть уменьшил, чтобы длинные названия помещались
+                                        fontSize:
+                                            13,
                                         fontWeight: isSelected
                                             ? FontWeight.bold
                                             : FontWeight.w600,
@@ -200,7 +204,9 @@ class _RoleSelectScreenState extends State<RoleSelectScreen>
                                     ),
                                     const SizedBox(height: 8),
                                     Padding(
-                                      padding: const EdgeInsets.symmetric(horizontal: 8.0),
+                                      padding: const EdgeInsets.symmetric(
+                                        horizontal: 8.0,
+                                      ),
                                       child: Text(
                                         item.description,
                                         textAlign: TextAlign.center,
@@ -209,7 +215,10 @@ class _RoleSelectScreenState extends State<RoleSelectScreen>
                                           height: 1.2,
                                           color: isSelected
                                               ? Colors.white70
-                                              : theme.textTheme.bodySmall?.color,
+                                              : theme
+                                                    .textTheme
+                                                    .bodySmall
+                                                    ?.color,
                                         ),
                                       ),
                                     ),

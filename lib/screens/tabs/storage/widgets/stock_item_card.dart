@@ -5,11 +5,7 @@ class StockItemCard extends StatelessWidget {
   final StockItem item;
   final VoidCallback onTap;
 
-  const StockItemCard({
-    super.key,
-    required this.item,
-    required this.onTap,
-  });
+  const StockItemCard({super.key, required this.item, required this.onTap});
 
   @override
   Widget build(BuildContext context) {
@@ -76,7 +72,9 @@ class StockItemCard extends StatelessWidget {
                         children: [
                           Text(
                             item.name,
-                            style: theme.textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold),
+                            style: theme.textTheme.titleLarge?.copyWith(
+                              fontWeight: FontWeight.bold,
+                            ),
                           ),
                           const SizedBox(height: 8),
                           Text(
@@ -99,7 +97,9 @@ class StockItemCard extends StatelessWidget {
                       children: [
                         Text(
                           'Остаток',
-                          style: TextStyle(color: theme.colorScheme.onSurface.withOpacity(0.7)),
+                          style: TextStyle(
+                            color: theme.colorScheme.onSurface.withOpacity(0.7),
+                          ),
                         ),
                         Text(
                           '${item.quantity}',
@@ -107,7 +107,9 @@ class StockItemCard extends StatelessWidget {
                             fontWeight: FontWeight.bold,
                             color: item.quantity > 10
                                 ? Colors.green
-                                : (item.quantity > 0 ? Colors.orange : Colors.red),
+                                : (item.quantity > 0
+                                      ? Colors.orange
+                                      : Colors.red),
                           ),
                         ),
                       ],

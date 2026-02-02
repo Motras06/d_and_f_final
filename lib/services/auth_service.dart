@@ -32,11 +32,8 @@ class AuthService {
     required String password,
   }) async {
     try {
-      await _supabase.auth.signInWithPassword(
-        email: email,
-        password: password,
-      );
-      return null; 
+      await _supabase.auth.signInWithPassword(email: email, password: password);
+      return null;
     } on AuthException catch (e) {
       return e.message;
     } catch (e) {
@@ -64,11 +61,13 @@ class AuthService {
       await _supabase.from('profiles').insert({
         'id': user.id,
         'mail': email,
-        'username': username?.trim().isNotEmpty == true ? username!.trim() : null,
+        'username': username?.trim().isNotEmpty == true
+            ? username!.trim()
+            : null,
         'role': appRoleToString(role),
       });
 
-      return null; 
+      return null;
     } on AuthException catch (e) {
       return e.message;
     } catch (e) {

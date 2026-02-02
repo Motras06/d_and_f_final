@@ -1,4 +1,3 @@
-// lib/screens/admin/admin_home.dart
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:d_and_f_final/models/profile.dart';
@@ -14,7 +13,8 @@ class AdminHome extends StatefulWidget {
   State<AdminHome> createState() => _AdminHomeState();
 }
 
-class _AdminHomeState extends State<AdminHome> with SingleTickerProviderStateMixin {
+class _AdminHomeState extends State<AdminHome>
+    with SingleTickerProviderStateMixin {
   late TabController _tabController;
   final supabase = Supabase.instance.client;
 
@@ -48,10 +48,15 @@ class _AdminHomeState extends State<AdminHome> with SingleTickerProviderStateMix
         title: const Text('Выход из аккаунта'),
         content: const Text('Вы уверены?'),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(context, false), child: const Text('Отмена')),
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text('Отмена'),
+          ),
           FilledButton(
             onPressed: () => Navigator.pop(context, true),
-            style: FilledButton.styleFrom(backgroundColor: Theme.of(context).colorScheme.error),
+            style: FilledButton.styleFrom(
+              backgroundColor: Theme.of(context).colorScheme.error,
+            ),
             child: const Text('Выйти'),
           ),
         ],
@@ -80,7 +85,11 @@ class _AdminHomeState extends State<AdminHome> with SingleTickerProviderStateMix
       'delivery_items': 'Позиции доставок',
       'store_stock': 'Остатки на складе',
     };
-    return map[name] ?? name.split('_').map((w) => w[0].toUpperCase() + w.substring(1)).join(' ');
+    return map[name] ??
+        name
+            .split('_')
+            .map((w) => w[0].toUpperCase() + w.substring(1))
+            .join(' ');
   }
 
   @override
@@ -111,18 +120,21 @@ class _AdminHomeState extends State<AdminHome> with SingleTickerProviderStateMix
           indicatorColor: colorScheme.primary,
           labelColor: colorScheme.primary,
           unselectedLabelColor: colorScheme.onSurfaceVariant,
-          tabs: tables.map((table) => Tab(text: formatTableName(table))).toList(),
+          tabs: tables
+              .map((table) => Tab(text: formatTableName(table)))
+              .toList(),
         ),
       ),
       body: TabBarView(
         controller: _tabController,
-        children: tables.map((table) => _TableManagementView(tableName: table)).toList(),
+        children: tables
+            .map((table) => _TableManagementView(tableName: table))
+            .toList(),
       ),
     );
   }
 }
 
-// ------------------ Вкладка с таблицей ------------------
 class _TableManagementView extends StatefulWidget {
   final String tableName;
   const _TableManagementView({required this.tableName});
@@ -151,14 +163,14 @@ class _TableManagementViewState extends State<_TableManagementView> {
     });
 
     try {
-      // Используем var — это решает проблему типов
-      PostgrestTransformBuilder<PostgrestList> query = Supabase.instance.client.from(widget.tableName).select();
+      PostgrestTransformBuilder<PostgrestList> query = Supabase.instance.client
+          .from(widget.tableName)
+          .select();
 
-      // Сортировка только для таблиц, где точно есть id
-      if (widget.tableName != 'store_assignments' && widget.tableName != 'store_stock') {
+      if (widget.tableName != 'store_assignments' &&
+          widget.tableName != 'store_stock') {
         query = query.order('id', ascending: false);
       }
-      // Для store_assignments и store_stock — без сортировки по id (нет такой колонки)
 
       final response = await query;
 
@@ -184,7 +196,8 @@ class _TableManagementViewState extends State<_TableManagementView> {
   Future<void> _addRecord() async {
     final result = await showDialog<Map<String, dynamic>>(
       context: context,
-      builder: (context) => RecordFormDialog(tableName: widget.tableName, isEdit: false),
+      builder: (context) =>
+          RecordFormDialog(tableName: widget.tableName, isEdit: false),
     );
 
     if (result != null && mounted) {
@@ -196,7 +209,9 @@ class _TableManagementViewState extends State<_TableManagementView> {
             content: const Text('Запись успешно добавлена'),
             backgroundColor: Colors.green,
             behavior: SnackBarBehavior.floating,
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(12),
+            ),
           ),
         );
       } catch (e) {
@@ -233,7 +248,9 @@ class _TableManagementViewState extends State<_TableManagementView> {
             content: const Text('Запись обновлена'),
             backgroundColor: Colors.green,
             behavior: SnackBarBehavior.floating,
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(12),
+            ),
           ),
         );
       } catch (e) {
@@ -254,10 +271,15 @@ class _TableManagementViewState extends State<_TableManagementView> {
         title: const Text('Удалить запись?'),
         content: const Text('Это действие нельзя отменить.'),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(context, false), child: const Text('Отмена')),
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text('Отмена'),
+          ),
           FilledButton(
             onPressed: () => Navigator.pop(context, true),
-            style: FilledButton.styleFrom(backgroundColor: Theme.of(context).colorScheme.error),
+            style: FilledButton.styleFrom(
+              backgroundColor: Theme.of(context).colorScheme.error,
+            ),
             child: const Text('Удалить'),
           ),
         ],
@@ -277,13 +299,15 @@ class _TableManagementViewState extends State<_TableManagementView> {
             content: const Text('Запись удалена'),
             backgroundColor: Colors.orange,
             behavior: SnackBarBehavior.floating,
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(12),
+            ),
           ),
         );
       } catch (e) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Ошибка удаления: $e')),
-        );
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('Ошибка удаления: $e')));
       }
     }
   }
@@ -298,9 +322,9 @@ class _TableManagementViewState extends State<_TableManagementView> {
       case 'delivery_items':
         return 'id';
       case 'store_assignments':
-        return 'user_id'; // композитный ключ, но для delete/update используем user_id
+        return 'user_id';
       case 'store_stock':
-        return 'product_id'; // или store_name — зависит от логики
+        return 'product_id';
       default:
         return 'id';
     }
@@ -344,85 +368,114 @@ class _TableManagementViewState extends State<_TableManagementView> {
       body: loading
           ? Center(child: CircularProgressIndicator(color: colorScheme.primary))
           : error != null
-              ? Center(
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Icon(Icons.error_outline_rounded, size: 80, color: colorScheme.error),
-                      const SizedBox(height: 24),
-                      Text('Ошибка: $error', style: theme.textTheme.titleLarge, textAlign: TextAlign.center),
-                      const SizedBox(height: 16),
-                      OutlinedButton(
-                        onPressed: loadRecords,
-                        child: const Text('Повторить'),
-                      ),
-                    ],
+          ? Center(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Icon(
+                    Icons.error_outline_rounded,
+                    size: 80,
+                    color: colorScheme.error,
                   ),
-                )
-              : records.isEmpty
-                  ? Center(
-                      child: Column(
-                        mainAxisAlignment: MainAxisAlignment.center,
+                  const SizedBox(height: 24),
+                  Text(
+                    'Ошибка: $error',
+                    style: theme.textTheme.titleLarge,
+                    textAlign: TextAlign.center,
+                  ),
+                  const SizedBox(height: 16),
+                  OutlinedButton(
+                    onPressed: loadRecords,
+                    child: const Text('Повторить'),
+                  ),
+                ],
+              ),
+            )
+          : records.isEmpty
+          ? Center(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Icon(
+                    Icons.table_rows_outlined,
+                    size: 80,
+                    color: colorScheme.onSurfaceVariant.withOpacity(0.4),
+                  ),
+                  const SizedBox(height: 24),
+                  Text(
+                    'Нет записей в таблице «${_AdminHomeState.formatTableName(widget.tableName)}»',
+                    style: theme.textTheme.titleLarge,
+                    textAlign: TextAlign.center,
+                  ),
+                ],
+              ),
+            )
+          : RefreshIndicator.adaptive(
+              onRefresh: loadRecords,
+              color: colorScheme.primary,
+              child: ListView.builder(
+                padding: const EdgeInsets.all(16),
+                itemCount: records.length,
+                itemBuilder: (context, index) {
+                  final record = records[index];
+                  return Card(
+                    margin: const EdgeInsets.only(bottom: 12),
+                    elevation: 1,
+                    shadowColor: colorScheme.shadow.withOpacity(0.12),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(20),
+                    ),
+                    color: colorScheme.surfaceContainerLowest,
+                    child: ListTile(
+                      title: Text(
+                        _formatValue(record.values.first),
+                        style: theme.textTheme.titleMedium?.copyWith(
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                      subtitle: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: record.entries
+                            .skip(1)
+                            .map(
+                              (e) => Padding(
+                                padding: const EdgeInsets.symmetric(
+                                  vertical: 4,
+                                ),
+                                child: Text(
+                                  '${e.key.replaceAll('_', ' ').toUpperCase()}: ${_formatValue(e.value)}',
+                                  style: theme.textTheme.bodyMedium?.copyWith(
+                                    color: colorScheme.onSurfaceVariant,
+                                  ),
+                                ),
+                              ),
+                            )
+                            .toList(),
+                      ),
+                      trailing: Row(
+                        mainAxisSize: MainAxisSize.min,
                         children: [
-                          Icon(Icons.table_rows_outlined, size: 80, color: colorScheme.onSurfaceVariant.withOpacity(0.4)),
-                          const SizedBox(height: 24),
-                          Text(
-                            'Нет записей в таблице «${_AdminHomeState.formatTableName(widget.tableName)}»',
-                            style: theme.textTheme.titleLarge,
-                            textAlign: TextAlign.center,
+                          IconButton(
+                            icon: Icon(
+                              Icons.edit_rounded,
+                              color: colorScheme.primary,
+                            ),
+                            onPressed: () => _editRecord(record),
+                          ),
+                          IconButton(
+                            icon: Icon(
+                              Icons.delete_rounded,
+                              color: colorScheme.error,
+                            ),
+                            onPressed: () => _deleteRecord(record),
                           ),
                         ],
                       ),
-                    )
-                  : RefreshIndicator.adaptive(
-                      onRefresh: loadRecords,
-                      color: colorScheme.primary,
-                      child: ListView.builder(
-                        padding: const EdgeInsets.all(16),
-                        itemCount: records.length,
-                        itemBuilder: (context, index) {
-                          final record = records[index];
-                          return Card(
-                            margin: const EdgeInsets.only(bottom: 12),
-                            elevation: 1,
-                            shadowColor: colorScheme.shadow.withOpacity(0.12),
-                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-                            color: colorScheme.surfaceContainerLowest,
-                            child: ListTile(
-                              title: Text(
-                                _formatValue(record.values.first),
-                                style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w600),
-                              ),
-                              subtitle: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: record.entries.skip(1).map((e) => Padding(
-                                  padding: const EdgeInsets.symmetric(vertical: 4),
-                                  child: Text(
-                                    '${e.key.replaceAll('_', ' ').toUpperCase()}: ${_formatValue(e.value)}',
-                                    style: theme.textTheme.bodyMedium?.copyWith(
-                                      color: colorScheme.onSurfaceVariant,
-                                    ),
-                                  ),
-                                )).toList(),
-                              ),
-                              trailing: Row(
-                                mainAxisSize: MainAxisSize.min,
-                                children: [
-                                  IconButton(
-                                    icon: Icon(Icons.edit_rounded, color: colorScheme.primary),
-                                    onPressed: () => _editRecord(record),
-                                  ),
-                                  IconButton(
-                                    icon: Icon(Icons.delete_rounded, color: colorScheme.error),
-                                    onPressed: () => _deleteRecord(record),
-                                  ),
-                                ],
-                              ),
-                            ),
-                          );
-                        },
-                      ),
                     ),
+                  );
+                },
+              ),
+            ),
     );
   }
 }

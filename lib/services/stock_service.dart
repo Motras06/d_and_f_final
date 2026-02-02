@@ -20,7 +20,9 @@ class StockService {
 
     final stockResponse = await supabase
         .from('store_stock')
-        .select('product_id, quantity, product:product_id(name, country, price, image_url, about)')
+        .select(
+          'product_id, quantity, product:product_id(name, country, price, image_url, about)',
+        )
         .eq('store_name', storeName)
         .order('quantity', ascending: false);
 
@@ -30,28 +32,33 @@ class StockService {
       final productJson = row['product'] as Map<String, dynamic>?;
       if (productJson == null) continue;
 
-      items.add(StockItem(
-        productId: row['product_id'] as int,
-        name: productJson['name'] as String,
-        country: productJson['country'] as String,
-        price: productJson['price'] as num,
-        imageUrl: productJson['image_url'] as String?,
-        about: productJson['about'] as String?,
-        quantity: (row['quantity'] as num).toInt(),
-      ));
+      items.add(
+        StockItem(
+          productId: row['product_id'] as int,
+          name: productJson['name'] as String,
+          country: productJson['country'] as String,
+          price: productJson['price'] as num,
+          imageUrl: productJson['image_url'] as String?,
+          about: productJson['about'] as String?,
+          quantity: (row['quantity'] as num).toInt(),
+        ),
+      );
     }
 
-    return {
-      'storeName': storeName,
-      'stockItems': items,
-    };
+    return {'storeName': storeName, 'stockItems': items};
   }
 
-  Future<void> updateQuantity(String storeName, int productId, int newQuantity) async {
+  Future<void> updateQuantity(
+    String storeName,
+    int productId,
+    int newQuantity,
+  ) async {
     if (newQuantity < 0) newQuantity = 0;
 
-    await supabase.from('store_stock').update({
-      'quantity': newQuantity,
-    }).eq('store_name', storeName).eq('product_id', productId);
+    await supabase
+        .from('store_stock')
+        .update({'quantity': newQuantity})
+        .eq('store_name', storeName)
+        .eq('product_id', productId);
   }
 }
